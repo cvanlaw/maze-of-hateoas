@@ -1,0 +1,6 @@
+@MazeOfHateoas.Api_HostAddress = http://localhost:5037
+
+GET {{MazeOfHateoas.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
