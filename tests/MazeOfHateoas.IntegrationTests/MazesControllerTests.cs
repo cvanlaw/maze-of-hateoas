@@ -353,4 +353,187 @@ public class MazesControllerTests : IClassFixture<WebApplicationFactory<Program>
         Assert.Equal("start", startLink.GetProperty("rel").GetString());
         Assert.Equal("POST", startLink.GetProperty("method").GetString());
     }
+
+    [Fact]
+    public async Task PostMaze_WithNegativeWidth_Returns400()
+    {
+        var request = new { width = -1, height = 5 };
+
+        var response = await _client.PostAsJsonAsync("/api/mazes", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostMaze_WithNegativeWidth_ReturnsProblemDetails()
+    {
+        var request = new { width = -1, height = 5 };
+
+        var response = await _client.PostAsJsonAsync("/api/mazes", request);
+        var content = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("Bad Request", json.RootElement.GetProperty("title").GetString());
+        Assert.Equal(400, json.RootElement.GetProperty("status").GetInt32());
+        Assert.Contains("Width", json.RootElement.GetProperty("detail").GetString());
+    }
+
+    [Fact]
+    public async Task PostMaze_WithNegativeHeight_Returns400()
+    {
+        var request = new { width = 5, height = -1 };
+
+        var response = await _client.PostAsJsonAsync("/api/mazes", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostMaze_WithNegativeHeight_ReturnsProblemDetails()
+    {
+        var request = new { width = 5, height = -1 };
+
+        var response = await _client.PostAsJsonAsync("/api/mazes", request);
+        var content = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("Bad Request", json.RootElement.GetProperty("title").GetString());
+        Assert.Equal(400, json.RootElement.GetProperty("status").GetInt32());
+        Assert.Contains("Height", json.RootElement.GetProperty("detail").GetString());
+    }
+
+    [Fact]
+    public async Task PostMaze_WithZeroWidth_Returns400()
+    {
+        var request = new { width = 0, height = 5 };
+
+        var response = await _client.PostAsJsonAsync("/api/mazes", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostMaze_WithZeroHeight_Returns400()
+    {
+        var request = new { width = 5, height = 0 };
+
+        var response = await _client.PostAsJsonAsync("/api/mazes", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostMaze_WithWidthExceedingMax_Returns400()
+    {
+        var request = new { width = 51, height = 5 };
+
+        var response = await _client.PostAsJsonAsync("/api/mazes", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostMaze_WithWidthExceedingMax_ReturnsProblemDetailsWithMaxInfo()
+    {
+        var request = new { width = 51, height = 5 };
+
+        var response = await _client.PostAsJsonAsync("/api/mazes", request);
+        var content = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("Bad Request", json.RootElement.GetProperty("title").GetString());
+        Assert.Equal(400, json.RootElement.GetProperty("status").GetInt32());
+        Assert.Contains("Width", json.RootElement.GetProperty("detail").GetString());
+        Assert.Contains("50", json.RootElement.GetProperty("detail").GetString());
+    }
+
+    [Fact]
+    public async Task PostMaze_WithHeightExceedingMax_Returns400()
+    {
+        var request = new { width = 5, height = 51 };
+
+        var response = await _client.PostAsJsonAsync("/api/mazes", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostMaze_WithHeightExceedingMax_ReturnsProblemDetailsWithMaxInfo()
+    {
+        var request = new { width = 5, height = 51 };
+
+        var response = await _client.PostAsJsonAsync("/api/mazes", request);
+        var content = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("Bad Request", json.RootElement.GetProperty("title").GetString());
+        Assert.Equal(400, json.RootElement.GetProperty("status").GetInt32());
+        Assert.Contains("Height", json.RootElement.GetProperty("detail").GetString());
+        Assert.Contains("50", json.RootElement.GetProperty("detail").GetString());
+    }
+
+    [Fact]
+    public async Task PostMaze_WithWidthAtMax_Returns201()
+    {
+        var request = new { width = 50, height = 5 };
+
+        var response = await _client.PostAsJsonAsync("/api/mazes", request);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostMaze_WithHeightAtMax_Returns201()
+    {
+        var request = new { width = 5, height = 50 };
+
+        var response = await _client.PostAsJsonAsync("/api/mazes", request);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetMaze_NotFound_ReturnsProblemDetailsWithRequiredFields()
+    {
+        var invalidId = Guid.NewGuid();
+        var response = await _client.GetAsync($"/api/mazes/{invalidId}");
+        var content = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        Assert.True(json.RootElement.TryGetProperty("type", out _), "Problem Details must have 'type'");
+        Assert.True(json.RootElement.TryGetProperty("title", out _), "Problem Details must have 'title'");
+        Assert.True(json.RootElement.TryGetProperty("status", out _), "Problem Details must have 'status'");
+        Assert.True(json.RootElement.TryGetProperty("detail", out _), "Problem Details must have 'detail'");
+        Assert.True(json.RootElement.TryGetProperty("instance", out _), "Problem Details must have 'instance'");
+    }
+
+    [Fact]
+    public async Task PostMaze_ValidationError_ReturnsProblemDetailsWithInstance()
+    {
+        var request = new { width = -1, height = 5 };
+
+        var response = await _client.PostAsJsonAsync("/api/mazes", request);
+        var content = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        Assert.True(json.RootElement.TryGetProperty("instance", out var instance));
+        Assert.Equal("/api/mazes", instance.GetString());
+    }
+
+    [Fact]
+    public async Task PostMaze_ValidationError_ReturnsProblemDetailsWithType()
+    {
+        var request = new { width = -1, height = 5 };
+
+        var response = await _client.PostAsJsonAsync("/api/mazes", request);
+        var content = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        Assert.True(json.RootElement.TryGetProperty("type", out var type));
+        Assert.Contains("rfc", type.GetString()!.ToLower());
+    }
 }

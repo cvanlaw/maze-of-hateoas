@@ -30,6 +30,56 @@ public class MazesController : ControllerBase
         var width = request?.Width ?? _settings.DefaultWidth;
         var height = request?.Height ?? _settings.DefaultHeight;
 
+        // Validate dimensions are positive
+        if (width <= 0)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Bad Request",
+                Status = 400,
+                Detail = "Width must be a positive integer",
+                Instance = "/api/mazes"
+            });
+        }
+
+        if (height <= 0)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Bad Request",
+                Status = 400,
+                Detail = "Height must be a positive integer",
+                Instance = "/api/mazes"
+            });
+        }
+
+        // Validate dimensions don't exceed max
+        if (width > _settings.MaxWidth)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Bad Request",
+                Status = 400,
+                Detail = $"Width cannot exceed {_settings.MaxWidth}",
+                Instance = "/api/mazes"
+            });
+        }
+
+        if (height > _settings.MaxHeight)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Bad Request",
+                Status = 400,
+                Detail = $"Height cannot exceed {_settings.MaxHeight}",
+                Instance = "/api/mazes"
+            });
+        }
+
         var maze = _mazeGenerator.Generate(width, height);
         await _mazeRepository.SaveAsync(maze);
 

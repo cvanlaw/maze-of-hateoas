@@ -3,6 +3,7 @@ using MazeOfHateoas.Api.Services;
 using MazeOfHateoas.Application.Interfaces;
 using MazeOfHateoas.Application.Services;
 using MazeOfHateoas.Infrastructure;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,12 +17,20 @@ builder.Services.Configure<MazeSettings>(options =>
 {
     var defaultWidth = Environment.GetEnvironmentVariable("MAZE_DEFAULT_WIDTH");
     var defaultHeight = Environment.GetEnvironmentVariable("MAZE_DEFAULT_HEIGHT");
+    var maxWidth = Environment.GetEnvironmentVariable("MAZE_MAX_WIDTH");
+    var maxHeight = Environment.GetEnvironmentVariable("MAZE_MAX_HEIGHT");
 
     if (int.TryParse(defaultWidth, out var width))
         options.DefaultWidth = width;
 
     if (int.TryParse(defaultHeight, out var height))
         options.DefaultHeight = height;
+
+    if (int.TryParse(maxWidth, out var mWidth))
+        options.MaxWidth = mWidth;
+
+    if (int.TryParse(maxHeight, out var mHeight))
+        options.MaxHeight = mHeight;
 });
 
 // Register application services
@@ -33,6 +42,27 @@ builder.Services.AddSingleton<ISessionLinkGenerator, SessionLinkGenerator>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+
+// Global exception handler - returns Problem Details for unhandled exceptions
+app.UseExceptionHandler(exceptionHandlerApp =>
+{
+    exceptionHandlerApp.Run(async context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/problem+json";
+
+        var problemDetails = new ProblemDetails
+        {
+            Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1",
+            Status = StatusCodes.Status500InternalServerError,
+            Title = "An unexpected error occurred",
+            Instance = context.Request.Path
+        };
+
+        await context.Response.WriteAsJsonAsync(problemDetails);
+    });
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
