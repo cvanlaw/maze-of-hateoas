@@ -6,8 +6,23 @@ using MazeOfHateoas.Application.Services;
 using MazeOfHateoas.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
+using Serilog;
+using Serilog.Events;
+using Serilog.Formatting.Compact;
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console(new CompactJsonFormatter())
+    .CreateBootstrapLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("Application", "MazeOfHateoas")
+    .WriteTo.Console(new CompactJsonFormatter()),
+    preserveStaticLogger: true);
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -88,6 +103,18 @@ app.UseExceptionHandler(exceptionHandlerApp =>
 
         await context.Response.WriteAsJsonAsync(problemDetails);
     });
+});
+
+app.UseSerilogRequestLogging(options =>
+{
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        diagnosticContext.Set("RequestId", httpContext.TraceIdentifier);
+    };
+    options.GetLevel = (httpContext, elapsed, ex) =>
+        httpContext.Request.Path == "/health"
+            ? LogEventLevel.Verbose
+            : LogEventLevel.Information;
 });
 
 // Enable Swagger in all environments
