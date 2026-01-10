@@ -16,6 +16,13 @@ public class SessionLinkGenerator : ISessionLinkGenerator
                 "GET")
         };
 
+        if (session.State == SessionState.Completed)
+        {
+            links["mazes"] = new Link("/api/mazes", "collection", "GET");
+            links["newMaze"] = new Link("/api/mazes", "create", "POST");
+            return links;
+        }
+
         var cell = maze.GetCell(session.CurrentPosition.X, session.CurrentPosition.Y);
 
         if (cell.CanMove(Direction.North) && session.CurrentPosition.Y > 0)

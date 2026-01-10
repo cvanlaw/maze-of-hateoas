@@ -228,4 +228,88 @@ public class SessionLinkGeneratorTests
         Assert.True(links.ContainsKey("west"));
         Assert.Equal(5, links.Count);
     }
+
+    private static Maze CreateMazeForCompletion(Position start, Position end)
+    {
+        var cells = new Cell[5, 5];
+        for (int x = 0; x < 5; x++)
+        {
+            for (int y = 0; y < 5; y++)
+            {
+                cells[x, y] = new Cell(new Position(x, y), false, false, false, false);
+            }
+        }
+        return new Maze(Guid.NewGuid(), 5, 5, cells, start, end, DateTime.UtcNow);
+    }
+
+    [Fact]
+    public void GenerateLinks_WhenSessionCompleted_IncludesMazesLink()
+    {
+        var maze = CreateMazeForCompletion(new Position(0, 0), new Position(1, 0));
+        var session = new MazeSession(Guid.NewGuid(), maze.Id, new Position(0, 0));
+        session.Move(Direction.East, maze);
+
+        var links = _generator.GenerateLinks(session, maze);
+
+        Assert.True(links.ContainsKey("mazes"));
+        var mazesLink = GetLink(links, "mazes");
+        Assert.Equal("/api/mazes", mazesLink.Href);
+        Assert.Equal("collection", mazesLink.Rel);
+        Assert.Equal("GET", mazesLink.Method);
+    }
+
+    [Fact]
+    public void GenerateLinks_WhenSessionCompleted_IncludesNewMazeLink()
+    {
+        var maze = CreateMazeForCompletion(new Position(0, 0), new Position(1, 0));
+        var session = new MazeSession(Guid.NewGuid(), maze.Id, new Position(0, 0));
+        session.Move(Direction.East, maze);
+
+        var links = _generator.GenerateLinks(session, maze);
+
+        Assert.True(links.ContainsKey("newMaze"));
+        var newMazeLink = GetLink(links, "newMaze");
+        Assert.Equal("/api/mazes", newMazeLink.Href);
+        Assert.Equal("create", newMazeLink.Rel);
+        Assert.Equal("POST", newMazeLink.Method);
+    }
+
+    [Fact]
+    public void GenerateLinks_WhenSessionCompleted_DoesNotIncludeMoveLinks()
+    {
+        var maze = CreateMazeForCompletion(new Position(0, 0), new Position(1, 0));
+        var session = new MazeSession(Guid.NewGuid(), maze.Id, new Position(0, 0));
+        session.Move(Direction.East, maze);
+
+        var links = _generator.GenerateLinks(session, maze);
+
+        Assert.False(links.ContainsKey("north"));
+        Assert.False(links.ContainsKey("south"));
+        Assert.False(links.ContainsKey("east"));
+        Assert.False(links.ContainsKey("west"));
+    }
+
+    [Fact]
+    public void GenerateLinks_WhenSessionCompleted_StillIncludesSelfLink()
+    {
+        var maze = CreateMazeForCompletion(new Position(0, 0), new Position(1, 0));
+        var session = new MazeSession(Guid.NewGuid(), maze.Id, new Position(0, 0));
+        session.Move(Direction.East, maze);
+
+        var links = _generator.GenerateLinks(session, maze);
+
+        Assert.True(links.ContainsKey("self"));
+    }
+
+    [Fact]
+    public void GenerateLinks_WhenSessionCompleted_HasExactlyThreeLinks()
+    {
+        var maze = CreateMazeForCompletion(new Position(0, 0), new Position(1, 0));
+        var session = new MazeSession(Guid.NewGuid(), maze.Id, new Position(0, 0));
+        session.Move(Direction.East, maze);
+
+        var links = _generator.GenerateLinks(session, maze);
+
+        Assert.Equal(3, links.Count);
+    }
 }

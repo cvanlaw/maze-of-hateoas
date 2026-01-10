@@ -396,4 +396,306 @@ public class SessionsControllerTests : IClassFixture<WebApplicationFactory<Progr
         var links = json.RootElement.GetProperty("_links");
         Assert.False(links.TryGetProperty("west", out _), "West link should not exist at (0,0) boundary");
     }
+
+    // Move Endpoint Tests
+
+    [Fact]
+    public async Task Move_WithValidDirection_ReturnsOk()
+    {
+        var mazeId = await CreateMazeAndGetId();
+        var postResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var postContent = await postResponse.Content.ReadAsStringAsync();
+        var postJson = JsonDocument.Parse(postContent);
+        var sessionId = postJson.RootElement.GetProperty("id").GetString();
+        var links = postJson.RootElement.GetProperty("_links");
+
+        var hasSouth = links.TryGetProperty("south", out var southLink);
+        var hasEast = links.TryGetProperty("east", out var eastLink);
+
+        string moveUrl;
+        if (hasSouth)
+        {
+            moveUrl = southLink.GetProperty("href").GetString()!;
+        }
+        else if (hasEast)
+        {
+            moveUrl = eastLink.GetProperty("href").GetString()!;
+        }
+        else
+        {
+            Assert.Fail("No valid move direction available from starting position");
+            return;
+        }
+
+        var response = await _client.PostAsync(moveUrl, null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Move_WithValidDirection_ReturnsUpdatedPosition()
+    {
+        var mazeId = await CreateMazeAndGetId();
+        var postResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var postContent = await postResponse.Content.ReadAsStringAsync();
+        var postJson = JsonDocument.Parse(postContent);
+        var sessionId = postJson.RootElement.GetProperty("id").GetString();
+        var links = postJson.RootElement.GetProperty("_links");
+
+        var hasSouth = links.TryGetProperty("south", out var southLink);
+        var hasEast = links.TryGetProperty("east", out var eastLink);
+
+        string moveUrl;
+        string direction;
+        if (hasSouth)
+        {
+            moveUrl = southLink.GetProperty("href").GetString()!;
+            direction = "south";
+        }
+        else if (hasEast)
+        {
+            moveUrl = eastLink.GetProperty("href").GetString()!;
+            direction = "east";
+        }
+        else
+        {
+            Assert.Fail("No valid move direction available from starting position");
+            return;
+        }
+
+        var response = await _client.PostAsync(moveUrl, null);
+        var content = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        var position = json.RootElement.GetProperty("currentPosition");
+        if (direction == "south")
+        {
+            Assert.Equal(0, position.GetProperty("x").GetInt32());
+            Assert.Equal(1, position.GetProperty("y").GetInt32());
+        }
+        else
+        {
+            Assert.Equal(1, position.GetProperty("x").GetInt32());
+            Assert.Equal(0, position.GetProperty("y").GetInt32());
+        }
+    }
+
+    [Fact]
+    public async Task Move_WithValidDirection_ReturnsMoveResult()
+    {
+        var mazeId = await CreateMazeAndGetId();
+        var postResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var postContent = await postResponse.Content.ReadAsStringAsync();
+        var postJson = JsonDocument.Parse(postContent);
+        var sessionId = postJson.RootElement.GetProperty("id").GetString();
+        var links = postJson.RootElement.GetProperty("_links");
+
+        var hasSouth = links.TryGetProperty("south", out var southLink);
+        var hasEast = links.TryGetProperty("east", out var eastLink);
+
+        string moveUrl = hasSouth ? southLink.GetProperty("href").GetString()! : eastLink.GetProperty("href").GetString()!;
+
+        var response = await _client.PostAsync(moveUrl, null);
+        var content = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        Assert.Equal("Success", json.RootElement.GetProperty("moveResult").GetString());
+    }
+
+    [Fact]
+    public async Task Move_AtBoundary_Returns400()
+    {
+        var mazeId = await CreateMazeAndGetId();
+        var postResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var postContent = await postResponse.Content.ReadAsStringAsync();
+        var postJson = JsonDocument.Parse(postContent);
+        var sessionId = postJson.RootElement.GetProperty("id").GetString();
+
+        var response = await _client.PostAsync($"/api/mazes/{mazeId}/sessions/{sessionId}/move/north", null);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Move_AtBoundary_ReturnsProblemDetails()
+    {
+        var mazeId = await CreateMazeAndGetId();
+        var postResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var postContent = await postResponse.Content.ReadAsStringAsync();
+        var postJson = JsonDocument.Parse(postContent);
+        var sessionId = postJson.RootElement.GetProperty("id").GetString();
+
+        var response = await _client.PostAsync($"/api/mazes/{mazeId}/sessions/{sessionId}/move/north", null);
+        var content = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        Assert.Equal("Bad Request", json.RootElement.GetProperty("title").GetString());
+        Assert.Equal(400, json.RootElement.GetProperty("status").GetInt32());
+    }
+
+    [Fact]
+    public async Task Move_WithInvalidDirection_Returns400()
+    {
+        var mazeId = await CreateMazeAndGetId();
+        var postResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var postContent = await postResponse.Content.ReadAsStringAsync();
+        var postJson = JsonDocument.Parse(postContent);
+        var sessionId = postJson.RootElement.GetProperty("id").GetString();
+
+        var response = await _client.PostAsync($"/api/mazes/{mazeId}/sessions/{sessionId}/move/up", null);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Move_WithInvalidDirection_ReturnsProblemDetailsWithValidDirections()
+    {
+        var mazeId = await CreateMazeAndGetId();
+        var postResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var postContent = await postResponse.Content.ReadAsStringAsync();
+        var postJson = JsonDocument.Parse(postContent);
+        var sessionId = postJson.RootElement.GetProperty("id").GetString();
+
+        var response = await _client.PostAsync($"/api/mazes/{mazeId}/sessions/{sessionId}/move/up", null);
+        var content = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        var detail = json.RootElement.GetProperty("detail").GetString();
+        Assert.Contains("north", detail);
+        Assert.Contains("south", detail);
+        Assert.Contains("east", detail);
+        Assert.Contains("west", detail);
+    }
+
+    [Fact]
+    public async Task Move_WithNonExistentSession_Returns404()
+    {
+        var mazeId = await CreateMazeAndGetId();
+        var nonExistentSessionId = Guid.NewGuid();
+
+        var response = await _client.PostAsync($"/api/mazes/{mazeId}/sessions/{nonExistentSessionId}/move/north", null);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Move_WithNonExistentMaze_Returns404()
+    {
+        var nonExistentMazeId = Guid.NewGuid();
+        var sessionId = Guid.NewGuid();
+
+        var response = await _client.PostAsync($"/api/mazes/{nonExistentMazeId}/sessions/{sessionId}/move/north", null);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Move_NavigateToEnd_SetsStateToCompleted()
+    {
+        var createResponse = await _client.PostAsJsonAsync("/api/mazes", new { width = 2, height = 1 });
+        var createContent = await createResponse.Content.ReadAsStringAsync();
+        var createJson = JsonDocument.Parse(createContent);
+        var mazeId = createJson.RootElement.GetProperty("id").GetString();
+
+        var sessionResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var sessionContent = await sessionResponse.Content.ReadAsStringAsync();
+        var sessionJson = JsonDocument.Parse(sessionContent);
+        var sessionId = sessionJson.RootElement.GetProperty("id").GetString();
+
+        var moveResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions/{sessionId}/move/east", null);
+        var moveContent = await moveResponse.Content.ReadAsStringAsync();
+        var moveJson = JsonDocument.Parse(moveContent);
+
+        Assert.Equal("Completed", moveJson.RootElement.GetProperty("state").GetString());
+    }
+
+    [Fact]
+    public async Task Move_NavigateToEnd_ReturnsCompletionMessage()
+    {
+        var createResponse = await _client.PostAsJsonAsync("/api/mazes", new { width = 2, height = 1 });
+        var createContent = await createResponse.Content.ReadAsStringAsync();
+        var createJson = JsonDocument.Parse(createContent);
+        var mazeId = createJson.RootElement.GetProperty("id").GetString();
+
+        var sessionResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var sessionContent = await sessionResponse.Content.ReadAsStringAsync();
+        var sessionJson = JsonDocument.Parse(sessionContent);
+        var sessionId = sessionJson.RootElement.GetProperty("id").GetString();
+
+        var moveResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions/{sessionId}/move/east", null);
+        var moveContent = await moveResponse.Content.ReadAsStringAsync();
+        var moveJson = JsonDocument.Parse(moveContent);
+
+        Assert.True(moveJson.RootElement.TryGetProperty("message", out var message));
+        Assert.Contains("Congratulations", message.GetString());
+    }
+
+    [Fact]
+    public async Task Move_NavigateToEnd_ReturnsCompletionLinks()
+    {
+        var createResponse = await _client.PostAsJsonAsync("/api/mazes", new { width = 2, height = 1 });
+        var createContent = await createResponse.Content.ReadAsStringAsync();
+        var createJson = JsonDocument.Parse(createContent);
+        var mazeId = createJson.RootElement.GetProperty("id").GetString();
+
+        var sessionResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var sessionContent = await sessionResponse.Content.ReadAsStringAsync();
+        var sessionJson = JsonDocument.Parse(sessionContent);
+        var sessionId = sessionJson.RootElement.GetProperty("id").GetString();
+
+        var moveResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions/{sessionId}/move/east", null);
+        var moveContent = await moveResponse.Content.ReadAsStringAsync();
+        var moveJson = JsonDocument.Parse(moveContent);
+
+        var links = moveJson.RootElement.GetProperty("_links");
+        Assert.True(links.TryGetProperty("mazes", out _));
+        Assert.True(links.TryGetProperty("newMaze", out _));
+        Assert.False(links.TryGetProperty("north", out _));
+        Assert.False(links.TryGetProperty("south", out _));
+        Assert.False(links.TryGetProperty("east", out _));
+        Assert.False(links.TryGetProperty("west", out _));
+    }
+
+    [Fact]
+    public async Task Move_OnCompletedSession_Returns400()
+    {
+        var createResponse = await _client.PostAsJsonAsync("/api/mazes", new { width = 2, height = 1 });
+        var createContent = await createResponse.Content.ReadAsStringAsync();
+        var createJson = JsonDocument.Parse(createContent);
+        var mazeId = createJson.RootElement.GetProperty("id").GetString();
+
+        var sessionResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var sessionContent = await sessionResponse.Content.ReadAsStringAsync();
+        var sessionJson = JsonDocument.Parse(sessionContent);
+        var sessionId = sessionJson.RootElement.GetProperty("id").GetString();
+
+        await _client.PostAsync($"/api/mazes/{mazeId}/sessions/{sessionId}/move/east", null);
+
+        var secondMoveResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions/{sessionId}/move/west", null);
+
+        Assert.Equal(HttpStatusCode.BadRequest, secondMoveResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Move_OnCompletedSession_ReturnsProblemDetailsWithAlreadyCompleted()
+    {
+        var createResponse = await _client.PostAsJsonAsync("/api/mazes", new { width = 2, height = 1 });
+        var createContent = await createResponse.Content.ReadAsStringAsync();
+        var createJson = JsonDocument.Parse(createContent);
+        var mazeId = createJson.RootElement.GetProperty("id").GetString();
+
+        var sessionResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var sessionContent = await sessionResponse.Content.ReadAsStringAsync();
+        var sessionJson = JsonDocument.Parse(sessionContent);
+        var sessionId = sessionJson.RootElement.GetProperty("id").GetString();
+
+        await _client.PostAsync($"/api/mazes/{mazeId}/sessions/{sessionId}/move/east", null);
+
+        var secondMoveResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions/{sessionId}/move/west", null);
+        var content = await secondMoveResponse.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        Assert.Equal("Bad Request", json.RootElement.GetProperty("title").GetString());
+        Assert.Contains("already completed", json.RootElement.GetProperty("detail").GetString());
+    }
 }

@@ -85,12 +85,102 @@ public class SessionsController : ControllerBase
         return Ok(response);
     }
 
-    private SessionResponse BuildSessionResponse(MazeSession session, Maze maze)
+    [HttpPost("{sessionId}/move/{direction}")]
+    public async Task<ActionResult<SessionResponse>> Move(Guid mazeId, Guid sessionId, string direction)
+    {
+        if (!TryParseDirection(direction, out var parsedDirection))
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Bad Request",
+                Status = 400,
+                Detail = $"Invalid direction '{direction}'. Valid directions are: north, south, east, west",
+                Instance = $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"
+            });
+        }
+
+        var maze = await _mazeRepository.GetByIdAsync(mazeId);
+        if (maze == null)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.4",
+                Title = "Not Found",
+                Status = 404,
+                Detail = $"Maze with ID '{mazeId}' was not found",
+                Instance = $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"
+            });
+        }
+
+        var session = await _sessionRepository.GetByIdAsync(sessionId);
+        if (session == null || session.MazeId != mazeId)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.4",
+                Title = "Not Found",
+                Status = 404,
+                Detail = $"Session with ID '{sessionId}' was not found",
+                Instance = $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"
+            });
+        }
+
+        var moveResult = session.Move(parsedDirection, maze);
+
+        if (moveResult == MoveResult.AlreadyCompleted)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Bad Request",
+                Status = 400,
+                Detail = "Cannot move - session is already completed",
+                Instance = $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"
+            });
+        }
+
+        if (moveResult == MoveResult.Blocked)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Bad Request",
+                Status = 400,
+                Detail = $"Cannot move {direction} - blocked by wall",
+                Instance = $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"
+            });
+        }
+
+        if (moveResult == MoveResult.OutOfBounds)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Bad Request",
+                Status = 400,
+                Detail = $"Cannot move {direction} - out of bounds",
+                Instance = $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"
+            });
+        }
+
+        await _sessionRepository.SaveAsync(session);
+
+        var response = BuildSessionResponse(session, maze, moveResult);
+        return Ok(response);
+    }
+
+    private static bool TryParseDirection(string direction, out Direction parsedDirection)
+    {
+        return Enum.TryParse(direction, ignoreCase: true, out parsedDirection);
+    }
+
+    private SessionResponse BuildSessionResponse(MazeSession session, Maze maze, MoveResult? moveResult = null)
     {
         var generatedLinks = _linkGenerator.GenerateLinks(session, maze);
         var links = generatedLinks.ToDictionary(kvp => kvp.Key, kvp => (Link)kvp.Value);
 
-        return new SessionResponse
+        var response = new SessionResponse
         {
             Id = session.Id,
             MazeId = session.MazeId,
@@ -99,5 +189,17 @@ public class SessionsController : ControllerBase
             StartedAt = session.StartedAt,
             Links = links
         };
+
+        if (moveResult.HasValue)
+        {
+            response.MoveResult = moveResult.Value.ToString();
+        }
+
+        if (session.State == SessionState.Completed)
+        {
+            response.Message = "Congratulations! You've completed the maze!";
+        }
+
+        return response;
     }
 }

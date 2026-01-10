@@ -19,6 +19,14 @@ public class SessionResponse
     [JsonPropertyName("startedAt")]
     public DateTime StartedAt { get; set; }
 
+    [JsonPropertyName("moveResult")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? MoveResult { get; set; }
+
+    [JsonPropertyName("message")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Message { get; set; }
+
     [JsonPropertyName("_links")]
     public Dictionary<string, Link> Links { get; set; } = new();
 }
