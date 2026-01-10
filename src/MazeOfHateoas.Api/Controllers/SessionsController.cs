@@ -3,6 +3,7 @@ using MazeOfHateoas.Application.Interfaces;
 using MazeOfHateoas.Application.Services;
 using MazeOfHateoas.Domain;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace MazeOfHateoas.Api.Controllers;
 
@@ -22,15 +23,18 @@ public class SessionsController : ControllerBase
     private readonly IMazeRepository _mazeRepository;
     private readonly ISessionRepository _sessionRepository;
     private readonly ISessionLinkGenerator _linkGenerator;
+    private readonly ILogger<SessionsController> _logger;
 
     public SessionsController(
         IMazeRepository mazeRepository,
         ISessionRepository sessionRepository,
-        ISessionLinkGenerator linkGenerator)
+        ISessionLinkGenerator linkGenerator,
+        ILogger<SessionsController> logger)
     {
         _mazeRepository = mazeRepository;
         _sessionRepository = sessionRepository;
         _linkGenerator = linkGenerator;
+        _logger = logger;
     }
 
     /// <summary>
@@ -65,6 +69,9 @@ public class SessionsController : ControllerBase
 
         var session = new MazeSession(Guid.NewGuid(), mazeId, maze.Start);
         await _sessionRepository.SaveAsync(session);
+
+        _logger.LogInformation("Session started: {SessionId} for maze {MazeId}",
+            session.Id, mazeId);
 
         var response = BuildSessionResponse(session, maze);
 
@@ -107,6 +114,7 @@ public class SessionsController : ControllerBase
         var session = await _sessionRepository.GetByIdAsync(sessionId);
         if (session == null || session.MazeId != mazeId)
         {
+            _logger.LogWarning("Session not found: {SessionId}", sessionId);
             return NotFound(new ProblemDetails
             {
                 Type = "https://tools.ietf.org/html/rfc7231#section-6.5.4",
@@ -224,6 +232,15 @@ public class SessionsController : ControllerBase
         }
 
         await _sessionRepository.SaveAsync(session);
+
+        _logger.LogInformation("Move {Direction}: {Result} for session {SessionId}",
+            direction, moveResult, sessionId);
+
+        if (session.State == SessionState.Completed)
+        {
+            _logger.LogInformation("Session {SessionId} completed maze {MazeId}",
+                sessionId, mazeId);
+        }
 
         var response = BuildSessionResponse(session, maze, moveResult);
         return Ok(response);
