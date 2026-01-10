@@ -5,6 +5,7 @@
 # - MAZE_DEFAULT_HEIGHT: Default maze height when not specified (default: 10)
 # - MAZE_MAX_WIDTH: Maximum allowed maze width (default: 50)
 # - MAZE_MAX_HEIGHT: Maximum allowed maze height (default: 50)
+# - Serilog__MinimumLevel__Default: Override log level (Verbose/Debug/Information/Warning/Error/Fatal)
 
 services:
   api:
@@ -21,6 +22,8 @@ services:
       - MAZE_DEFAULT_HEIGHT=10
       - MAZE_MAX_WIDTH=50
       - MAZE_MAX_HEIGHT=50
+      # Log level can be overridden via environment variable:
+      # - Serilog__MinimumLevel__Default=Warning
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
