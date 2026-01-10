@@ -1,0 +1,28 @@
+# Production Docker Compose Configuration
+# Environment Variables:
+# - ASPNETCORE_ENVIRONMENT: Runtime environment (Development/Production)
+# - MAZE_DEFAULT_WIDTH: Default maze width when not specified (default: 10)
+# - MAZE_DEFAULT_HEIGHT: Default maze height when not specified (default: 10)
+# - MAZE_MAX_WIDTH: Maximum allowed maze width (default: 50)
+# - MAZE_MAX_HEIGHT: Maximum allowed maze height (default: 50)
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      # Runtime environment
+      - ASPNETCORE_ENVIRONMENT=Development
+      # Maze configuration
+      - MAZE_DEFAULT_WIDTH=10
+      - MAZE_DEFAULT_HEIGHT=10
+      - MAZE_MAX_WIDTH=50
+      - MAZE_MAX_HEIGHT=50
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
