@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\MazeOfHateoas.Domain\MazeOfHateoas.Domain.csproj" />
     <ProjectReference Include="..\..\src\MazeOfHateoas.Application\MazeOfHateoas.Application.csproj" />
+    <ProjectReference Include="..\..\src\MazeOfHateoas.Infrastructure\MazeOfHateoas.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
