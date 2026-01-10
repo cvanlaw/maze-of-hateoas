@@ -4,6 +4,7 @@ using MazeOfHateoas.Api.Services;
 using MazeOfHateoas.Application.Interfaces;
 using MazeOfHateoas.Application.Services;
 using MazeOfHateoas.Infrastructure;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -90,6 +91,14 @@ app.UseExceptionHandler(exceptionHandlerApp =>
 {
     exceptionHandlerApp.Run(async context =>
     {
+        var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+
+        logger.LogError(exception,
+            "Unhandled exception for {Method} {Path}",
+            context.Request.Method,
+            context.Request.Path);
+
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
         context.Response.ContentType = "application/problem+json";
 
