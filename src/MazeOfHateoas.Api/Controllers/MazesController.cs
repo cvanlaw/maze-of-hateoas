@@ -51,13 +51,51 @@ public class MazesController : ControllerBase
         return CreatedAtAction(nameof(GetMaze), new { id = maze.Id }, response);
     }
 
+    [HttpGet]
+    public async Task<ActionResult<MazeListResponse>> GetAllMazes()
+    {
+        var mazes = await _mazeRepository.GetAllAsync();
+
+        var response = new MazeListResponse
+        {
+            Mazes = mazes.Select(maze => new MazeSummaryResponse
+            {
+                Id = maze.Id,
+                Width = maze.Width,
+                Height = maze.Height,
+                CreatedAt = maze.CreatedAt,
+                Links = new Dictionary<string, Link>
+                {
+                    ["self"] = new Link($"/api/mazes/{maze.Id}", "self", "GET"),
+                    ["start"] = new Link($"/api/mazes/{maze.Id}/sessions", "start", "POST")
+                }
+            }).ToList(),
+            Links = new Dictionary<string, Link>
+            {
+                ["self"] = new Link("/api/mazes", "self", "GET"),
+                ["create"] = new Link("/api/mazes", "create", "POST")
+            }
+        };
+
+        return Ok(response);
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<MazeResponse>> GetMaze(Guid id)
     {
         var maze = await _mazeRepository.GetByIdAsync(id);
 
         if (maze == null)
-            return NotFound();
+        {
+            return NotFound(new ProblemDetails
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.4",
+                Title = "Not Found",
+                Status = 404,
+                Detail = $"Maze with ID '{id}' was not found",
+                Instance = $"/api/mazes/{id}"
+            });
+        }
 
         var response = new MazeResponse
         {
