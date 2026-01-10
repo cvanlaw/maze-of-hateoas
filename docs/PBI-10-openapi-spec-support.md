@@ -2,7 +2,7 @@
 id: 10
 title: OpenAPI Specification Support
 depends_on: [8, 9]
-status: pending
+status: completed
 ---
 
 # PBI-10: OpenAPI Specification Support
@@ -13,16 +13,16 @@ Enhance the API with comprehensive OpenAPI 3.0 documentation. The specification 
 
 ## Acceptance Criteria
 
-- [ ] XML documentation comments enabled in MazeOfHateoas.Api.csproj
-- [ ] All controller actions have `<summary>` and `<remarks>` XML comments
-- [ ] Request models have XML documentation on properties
-- [ ] Response examples provided for each endpoint using Swashbuckle attributes
-- [ ] Problem Details (RFC 7807) schema properly documented with examples
-- [ ] HATEOAS Link model documented in OpenAPI schema
-- [ ] Swagger UI available at `/swagger` in all environments (including production)
-- [ ] Static `openapi.json` file generated and committed to repository root
-- [ ] OpenAPI spec validates against OpenAPI 3.0 schema
-- [ ] All response status codes documented (200, 201, 400, 404, 500)
+- [x] XML documentation comments enabled in MazeOfHateoas.Api.csproj
+- [x] All controller actions have `<summary>` and `<remarks>` XML comments
+- [x] Request models have XML documentation on properties
+- [x] Response examples provided for each endpoint using Swashbuckle attributes
+- [x] Problem Details (RFC 7807) schema properly documented with examples
+- [x] HATEOAS Link model documented in OpenAPI schema
+- [x] Swagger UI available at `/swagger` in all environments (including production)
+- [x] Static `openapi.json` file generated and committed to repository root
+- [x] OpenAPI spec validates against OpenAPI 3.0 schema
+- [x] All response status codes documented (200, 201, 400, 404, 500)
 
 ## Technical Notes
 

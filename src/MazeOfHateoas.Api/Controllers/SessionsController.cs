@@ -6,8 +6,17 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace MazeOfHateoas.Api.Controllers;
 
+/// <summary>
+/// Controller for managing maze navigation sessions.
+/// </summary>
+/// <remarks>
+/// Sessions track a player's progress through a maze. Each session maintains
+/// the current position and state, and provides HATEOAS links indicating
+/// valid moves based on the maze layout and walls.
+/// </remarks>
 [ApiController]
 [Route("api/mazes/{mazeId}/sessions")]
+[Produces("application/json")]
 public class SessionsController : ControllerBase
 {
     private readonly IMazeRepository _mazeRepository;
@@ -24,7 +33,20 @@ public class SessionsController : ControllerBase
         _linkGenerator = linkGenerator;
     }
 
+    /// <summary>
+    /// Creates a new navigation session for a maze.
+    /// </summary>
+    /// <remarks>
+    /// Starts a new session at the maze's start position (0,0).
+    /// The response includes HATEOAS links for available movement directions.
+    /// </remarks>
+    /// <param name="mazeId">The unique identifier of the maze to navigate.</param>
+    /// <returns>The created session with current position and available moves.</returns>
+    /// <response code="201">Returns the newly created session.</response>
+    /// <response code="404">If the maze with the specified ID was not found.</response>
     [HttpPost]
+    [ProducesResponseType(typeof(SessionResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SessionResponse>> CreateSession(Guid mazeId)
     {
         var maze = await _mazeRepository.GetByIdAsync(mazeId);
@@ -52,7 +74,21 @@ public class SessionsController : ControllerBase
             response);
     }
 
+    /// <summary>
+    /// Retrieves the current state of a navigation session.
+    /// </summary>
+    /// <remarks>
+    /// Returns the session's current position, state, and HATEOAS links
+    /// for available movement directions based on the maze walls.
+    /// </remarks>
+    /// <param name="mazeId">The unique identifier of the maze.</param>
+    /// <param name="sessionId">The unique identifier of the session.</param>
+    /// <returns>The session state with available moves.</returns>
+    /// <response code="200">Returns the session state.</response>
+    /// <response code="404">If the maze or session was not found.</response>
     [HttpGet("{sessionId}")]
+    [ProducesResponseType(typeof(SessionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SessionResponse>> GetSession(Guid mazeId, Guid sessionId)
     {
         var maze = await _mazeRepository.GetByIdAsync(mazeId);
@@ -85,7 +121,30 @@ public class SessionsController : ControllerBase
         return Ok(response);
     }
 
+    /// <summary>
+    /// Moves the player in the specified direction.
+    /// </summary>
+    /// <remarks>
+    /// Attempts to move the player in the given direction. The move will fail if:
+    /// - The direction is blocked by a wall
+    /// - The move would go out of bounds
+    /// - The session is already completed
+    ///
+    /// Valid directions are: north, south, east, west (case-insensitive).
+    ///
+    /// Upon reaching the end position, the session state changes to "Completed".
+    /// </remarks>
+    /// <param name="mazeId">The unique identifier of the maze.</param>
+    /// <param name="sessionId">The unique identifier of the session.</param>
+    /// <param name="direction">The direction to move (north, south, east, west).</param>
+    /// <returns>The updated session state with new position and available moves.</returns>
+    /// <response code="200">Move was successful. Returns updated session state.</response>
+    /// <response code="400">If the direction is invalid, move is blocked, or session is completed.</response>
+    /// <response code="404">If the maze or session was not found.</response>
     [HttpPost("{sessionId}/move/{direction}")]
+    [ProducesResponseType(typeof(SessionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SessionResponse>> Move(Guid mazeId, Guid sessionId, string direction)
     {
         if (!TryParseDirection(direction, out var parsedDirection))

@@ -1,16 +1,43 @@
+using System.Reflection;
 using MazeOfHateoas.Api.Configuration;
 using MazeOfHateoas.Api.Services;
 using MazeOfHateoas.Application.Interfaces;
 using MazeOfHateoas.Application.Services;
 using MazeOfHateoas.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Version = "v1",
+        Title = "Maze of HATEOAS API",
+        Description = "A RESTful API demonstrating HATEOAS principles through interactive maze navigation. " +
+                      "Generate mazes and navigate through them by following hypermedia links that indicate available moves.",
+        Contact = new OpenApiContact
+        {
+            Name = "API Support"
+        },
+        License = new OpenApiLicense
+        {
+            Name = "MIT"
+        }
+    });
+
+    // Include XML comments from the API assembly
+    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+});
 
 // Configure MazeSettings from environment variables
 builder.Services.Configure<MazeSettings>(options =>
@@ -63,11 +90,13 @@ app.UseExceptionHandler(exceptionHandlerApp =>
     });
 });
 
-if (app.Environment.IsDevelopment())
+// Enable Swagger in all environments
+app.UseSwagger();
+app.UseSwaggerUI(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Maze of HATEOAS API v1");
+    options.RoutePrefix = "swagger";
+});
 
 app.UseHttpsRedirection();
 app.MapControllers();

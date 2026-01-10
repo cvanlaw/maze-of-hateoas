@@ -1,0 +1,563 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Maze of HATEOAS API",
+    "description": "A RESTful API demonstrating HATEOAS principles through interactive maze navigation. Generate mazes and navigate through them by following hypermedia links that indicate available moves.",
+    "contact": {
+      "name": "API Support"
+    },
+    "license": {
+      "name": "MIT"
+    },
+    "version": "v1"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "MazeOfHateoas.Api"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Mazes": {
+      "post": {
+        "tags": [
+          "Mazes"
+        ],
+        "summary": "Creates a new maze with the specified dimensions.",
+        "description": "If dimensions are not provided, default values from configuration will be used.\r\nThe maze is generated using a recursive backtracking algorithm ensuring a solvable path\r\nfrom start (0,0) to end (width-1, height-1).",
+        "requestBody": {
+          "description": "Optional request body with width and height dimensions.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMazeRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMazeRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMazeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Returns the newly created maze.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MazeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "If the dimensions are invalid (negative or exceeding maximum).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Mazes"
+        ],
+        "summary": "Retrieves all available mazes.",
+        "description": "Returns a list of all mazes with summary information and HATEOAS links\r\nfor navigation and starting new sessions.",
+        "responses": {
+          "200": {
+            "description": "Returns the list of mazes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MazeListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Mazes/{id}": {
+      "get": {
+        "tags": [
+          "Mazes"
+        ],
+        "summary": "Retrieves a specific maze by its ID.",
+        "description": "Returns detailed maze information including start and end positions,\r\nalong with HATEOAS links to start a new navigation session.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The unique identifier of the maze.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the requested maze.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MazeResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "If the maze with the specified ID was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mazes/{mazeId}/sessions": {
+      "post": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Creates a new navigation session for a maze.",
+        "description": "Starts a new session at the maze's start position (0,0).\r\nThe response includes HATEOAS links for available movement directions.",
+        "parameters": [
+          {
+            "name": "mazeId",
+            "in": "path",
+            "description": "The unique identifier of the maze to navigate.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Returns the newly created session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "If the maze with the specified ID was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mazes/{mazeId}/sessions/{sessionId}": {
+      "get": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Retrieves the current state of a navigation session.",
+        "description": "Returns the session's current position, state, and HATEOAS links\r\nfor available movement directions based on the maze walls.",
+        "parameters": [
+          {
+            "name": "mazeId",
+            "in": "path",
+            "description": "The unique identifier of the maze.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "The unique identifier of the session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the session state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "If the maze or session was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}": {
+      "post": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Moves the player in the specified direction.",
+        "description": "Attempts to move the player in the given direction. The move will fail if:\r\n- The direction is blocked by a wall\r\n- The move would go out of bounds\r\n- The session is already completed\r\n            \r\nValid directions are: north, south, east, west (case-insensitive).\r\n            \r\nUpon reaching the end position, the session state changes to \"Completed\".",
+        "parameters": [
+          {
+            "name": "mazeId",
+            "in": "path",
+            "description": "The unique identifier of the maze.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "The unique identifier of the session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "path",
+            "description": "The direction to move (north, south, east, west).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Move was successful. Returns updated session state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "If the direction is invalid, move is blocked, or session is completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "If the maze or session was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateMazeRequest": {
+        "type": "object",
+        "properties": {
+          "width": {
+            "type": "integer",
+            "description": "The width of the maze in cells. If not specified, uses the configured default.",
+            "format": "int32",
+            "nullable": true,
+            "example": 10
+          },
+          "height": {
+            "type": "integer",
+            "description": "The height of the maze in cells. If not specified, uses the configured default.",
+            "format": "int32",
+            "nullable": true,
+            "example": 10
+          }
+        },
+        "additionalProperties": false,
+        "description": "Request model for creating a new maze."
+      },
+      "Link": {
+        "type": "object",
+        "properties": {
+          "href": {
+            "type": "string",
+            "description": "The URL of the linked resource or action.",
+            "nullable": true,
+            "example": "/api/mazes/550e8400-e29b-41d4-a716-446655440000"
+          },
+          "rel": {
+            "type": "string",
+            "description": "The relationship type of the link (e.g., \"self\", \"start\", \"move\").",
+            "nullable": true,
+            "example": "self"
+          },
+          "method": {
+            "type": "string",
+            "description": "The HTTP method to use when following this link.",
+            "nullable": true,
+            "example": "GET"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Represents a HATEOAS hypermedia link."
+      },
+      "MazeListResponse": {
+        "type": "object",
+        "properties": {
+          "mazes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MazeSummaryResponse"
+            },
+            "description": "The list of available mazes.",
+            "nullable": true
+          },
+          "_links": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Link"
+            },
+            "description": "HATEOAS links for collection-level actions.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Response model containing a list of mazes."
+      },
+      "MazeResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the maze.",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "width": {
+            "type": "integer",
+            "description": "The width of the maze in cells.",
+            "format": "int32",
+            "example": 10
+          },
+          "height": {
+            "type": "integer",
+            "description": "The height of the maze in cells.",
+            "format": "int32",
+            "example": 10
+          },
+          "start": {
+            "$ref": "#/components/schemas/PositionDto"
+          },
+          "end": {
+            "$ref": "#/components/schemas/PositionDto"
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The timestamp when the maze was created.",
+            "format": "date-time"
+          },
+          "_links": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Link"
+            },
+            "description": "HATEOAS links for available actions on this maze.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Response model containing detailed maze information."
+      },
+      "MazeSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the maze.",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "width": {
+            "type": "integer",
+            "description": "The width of the maze in cells.",
+            "format": "int32",
+            "example": 10
+          },
+          "height": {
+            "type": "integer",
+            "description": "The height of the maze in cells.",
+            "format": "int32",
+            "example": 10
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The timestamp when the maze was created.",
+            "format": "date-time"
+          },
+          "_links": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Link"
+            },
+            "description": "HATEOAS links for available actions on this maze.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Summary response model for maze listings."
+      },
+      "PositionDto": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "integer",
+            "description": "The X coordinate (column) in the maze grid. 0 is the leftmost column.",
+            "format": "int32",
+            "example": 5
+          },
+          "y": {
+            "type": "integer",
+            "description": "The Y coordinate (row) in the maze grid. 0 is the topmost row.",
+            "format": "int32",
+            "example": 3
+          }
+        },
+        "additionalProperties": false,
+        "description": "Represents a position in the maze grid."
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": { }
+      },
+      "SessionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the session.",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440001"
+          },
+          "mazeId": {
+            "type": "string",
+            "description": "The unique identifier of the maze this session belongs to.",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "currentPosition": {
+            "$ref": "#/components/schemas/PositionDto"
+          },
+          "state": {
+            "type": "string",
+            "description": "The current state of the session (InProgress or Completed).",
+            "nullable": true,
+            "example": "InProgress"
+          },
+          "startedAt": {
+            "type": "string",
+            "description": "The timestamp when the session was started.",
+            "format": "date-time"
+          },
+          "moveResult": {
+            "type": "string",
+            "description": "The result of the last move attempt (Success, Blocked, OutOfBounds, AlreadyCompleted).\r\nOnly present after a move operation.",
+            "nullable": true,
+            "example": "Success"
+          },
+          "message": {
+            "type": "string",
+            "description": "A message for the player, such as a congratulations message upon completion.",
+            "nullable": true,
+            "example": "Congratulations! You've completed the maze!"
+          },
+          "_links": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Link"
+            },
+            "description": "HATEOAS links for available actions. Movement links are only present\r\nfor directions that are not blocked by walls.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Response model for a maze navigation session."
+      }
+    }
+  }
+}

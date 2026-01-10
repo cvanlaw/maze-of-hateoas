@@ -6,8 +6,12 @@ using Microsoft.Extensions.Options;
 
 namespace MazeOfHateoas.Api.Controllers;
 
+/// <summary>
+/// Controller for managing mazes.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Produces("application/json")]
 public class MazesController : ControllerBase
 {
     private readonly IMazeGenerator _mazeGenerator;
@@ -24,7 +28,21 @@ public class MazesController : ControllerBase
         _settings = settings.Value;
     }
 
+    /// <summary>
+    /// Creates a new maze with the specified dimensions.
+    /// </summary>
+    /// <remarks>
+    /// If dimensions are not provided, default values from configuration will be used.
+    /// The maze is generated using a recursive backtracking algorithm ensuring a solvable path
+    /// from start (0,0) to end (width-1, height-1).
+    /// </remarks>
+    /// <param name="request">Optional request body with width and height dimensions.</param>
+    /// <returns>The created maze with HATEOAS links.</returns>
+    /// <response code="201">Returns the newly created maze.</response>
+    /// <response code="400">If the dimensions are invalid (negative or exceeding maximum).</response>
     [HttpPost]
+    [ProducesResponseType(typeof(MazeResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<MazeResponse>> CreateMaze([FromBody] CreateMazeRequest? request)
     {
         var width = request?.Width ?? _settings.DefaultWidth;
@@ -101,7 +119,17 @@ public class MazesController : ControllerBase
         return CreatedAtAction(nameof(GetMaze), new { id = maze.Id }, response);
     }
 
+    /// <summary>
+    /// Retrieves all available mazes.
+    /// </summary>
+    /// <remarks>
+    /// Returns a list of all mazes with summary information and HATEOAS links
+    /// for navigation and starting new sessions.
+    /// </remarks>
+    /// <returns>A list of all mazes with HATEOAS links.</returns>
+    /// <response code="200">Returns the list of mazes.</response>
     [HttpGet]
+    [ProducesResponseType(typeof(MazeListResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<MazeListResponse>> GetAllMazes()
     {
         var mazes = await _mazeRepository.GetAllAsync();
@@ -130,7 +158,20 @@ public class MazesController : ControllerBase
         return Ok(response);
     }
 
+    /// <summary>
+    /// Retrieves a specific maze by its ID.
+    /// </summary>
+    /// <remarks>
+    /// Returns detailed maze information including start and end positions,
+    /// along with HATEOAS links to start a new navigation session.
+    /// </remarks>
+    /// <param name="id">The unique identifier of the maze.</param>
+    /// <returns>The maze details with HATEOAS links.</returns>
+    /// <response code="200">Returns the requested maze.</response>
+    /// <response code="404">If the maze with the specified ID was not found.</response>
     [HttpGet("{id}")]
+    [ProducesResponseType(typeof(MazeResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<MazeResponse>> GetMaze(Guid id)
     {
         var maze = await _mazeRepository.GetByIdAsync(id);
