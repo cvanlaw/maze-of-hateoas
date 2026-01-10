@@ -233,4 +233,167 @@ public class SessionsControllerTests : IClassFixture<WebApplicationFactory<Progr
             Assert.Equal("POST", eastLink.GetProperty("method").GetString());
         }
     }
+
+    // GET Session Tests
+
+    [Fact]
+    public async Task GetSession_ReturnsOk()
+    {
+        var mazeId = await CreateMazeAndGetId();
+        var postResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var postContent = await postResponse.Content.ReadAsStringAsync();
+        var postJson = JsonDocument.Parse(postContent);
+        var sessionId = postJson.RootElement.GetProperty("id").GetString();
+
+        var response = await _client.GetAsync($"/api/mazes/{mazeId}/sessions/{sessionId}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetSession_ReturnsSessionProperties()
+    {
+        var mazeId = await CreateMazeAndGetId();
+        var postResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var postContent = await postResponse.Content.ReadAsStringAsync();
+        var postJson = JsonDocument.Parse(postContent);
+        var sessionId = postJson.RootElement.GetProperty("id").GetString();
+
+        var response = await _client.GetAsync($"/api/mazes/{mazeId}/sessions/{sessionId}");
+        var content = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        Assert.Equal(sessionId, json.RootElement.GetProperty("id").GetString());
+        Assert.Equal(mazeId, json.RootElement.GetProperty("mazeId").GetString());
+        Assert.True(json.RootElement.TryGetProperty("currentPosition", out _));
+        Assert.True(json.RootElement.TryGetProperty("state", out _));
+    }
+
+    [Fact]
+    public async Task GetSession_ReturnsSelfLink()
+    {
+        var mazeId = await CreateMazeAndGetId();
+        var postResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var postContent = await postResponse.Content.ReadAsStringAsync();
+        var postJson = JsonDocument.Parse(postContent);
+        var sessionId = postJson.RootElement.GetProperty("id").GetString();
+
+        var response = await _client.GetAsync($"/api/mazes/{mazeId}/sessions/{sessionId}");
+        var content = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        var links = json.RootElement.GetProperty("_links");
+        var selfLink = links.GetProperty("self");
+        Assert.Equal($"/api/mazes/{mazeId}/sessions/{sessionId}", selfLink.GetProperty("href").GetString());
+        Assert.Equal("self", selfLink.GetProperty("rel").GetString());
+        Assert.Equal("GET", selfLink.GetProperty("method").GetString());
+    }
+
+    [Fact]
+    public async Task GetSession_ReturnsMatchingLinksAsPost()
+    {
+        var mazeId = await CreateMazeAndGetId();
+        var postResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var postContent = await postResponse.Content.ReadAsStringAsync();
+        var postJson = JsonDocument.Parse(postContent);
+        var sessionId = postJson.RootElement.GetProperty("id").GetString();
+        var postLinks = postJson.RootElement.GetProperty("_links");
+
+        var getResponse = await _client.GetAsync($"/api/mazes/{mazeId}/sessions/{sessionId}");
+        var getContent = await getResponse.Content.ReadAsStringAsync();
+        var getJson = JsonDocument.Parse(getContent);
+        var getLinks = getJson.RootElement.GetProperty("_links");
+
+        // GET should return same links as POST for same session state
+        Assert.Equal(postLinks.TryGetProperty("north", out _), getLinks.TryGetProperty("north", out _));
+        Assert.Equal(postLinks.TryGetProperty("south", out _), getLinks.TryGetProperty("south", out _));
+        Assert.Equal(postLinks.TryGetProperty("east", out _), getLinks.TryGetProperty("east", out _));
+        Assert.Equal(postLinks.TryGetProperty("west", out _), getLinks.TryGetProperty("west", out _));
+    }
+
+    [Fact]
+    public async Task GetSession_WithNonExistentSession_Returns404()
+    {
+        var mazeId = await CreateMazeAndGetId();
+        var nonExistentSessionId = Guid.NewGuid();
+
+        var response = await _client.GetAsync($"/api/mazes/{mazeId}/sessions/{nonExistentSessionId}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetSession_WithNonExistentSession_ReturnsProblemDetails()
+    {
+        var mazeId = await CreateMazeAndGetId();
+        var nonExistentSessionId = Guid.NewGuid();
+
+        var response = await _client.GetAsync($"/api/mazes/{mazeId}/sessions/{nonExistentSessionId}");
+        var content = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        Assert.Equal("Not Found", json.RootElement.GetProperty("title").GetString());
+        Assert.Equal(404, json.RootElement.GetProperty("status").GetInt32());
+        Assert.Contains(nonExistentSessionId.ToString(), json.RootElement.GetProperty("detail").GetString());
+    }
+
+    [Fact]
+    public async Task GetSession_WithNonExistentMaze_Returns404()
+    {
+        var nonExistentMazeId = Guid.NewGuid();
+        var sessionId = Guid.NewGuid();
+
+        var response = await _client.GetAsync($"/api/mazes/{nonExistentMazeId}/sessions/{sessionId}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetSession_WithNonExistentMaze_ReturnsProblemDetails()
+    {
+        var nonExistentMazeId = Guid.NewGuid();
+        var sessionId = Guid.NewGuid();
+
+        var response = await _client.GetAsync($"/api/mazes/{nonExistentMazeId}/sessions/{sessionId}");
+        var content = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        Assert.Equal("Not Found", json.RootElement.GetProperty("title").GetString());
+        Assert.Equal(404, json.RootElement.GetProperty("status").GetInt32());
+        Assert.Contains(nonExistentMazeId.ToString(), json.RootElement.GetProperty("detail").GetString());
+    }
+
+    [Fact]
+    public async Task GetSession_DoesNotIncludeNorthLinkAtBoundary()
+    {
+        var mazeId = await CreateMazeAndGetId();
+        var postResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var postContent = await postResponse.Content.ReadAsStringAsync();
+        var postJson = JsonDocument.Parse(postContent);
+        var sessionId = postJson.RootElement.GetProperty("id").GetString();
+
+        var response = await _client.GetAsync($"/api/mazes/{mazeId}/sessions/{sessionId}");
+        var content = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        var links = json.RootElement.GetProperty("_links");
+        Assert.False(links.TryGetProperty("north", out _), "North link should not exist at (0,0) boundary");
+    }
+
+    [Fact]
+    public async Task GetSession_DoesNotIncludeWestLinkAtBoundary()
+    {
+        var mazeId = await CreateMazeAndGetId();
+        var postResponse = await _client.PostAsync($"/api/mazes/{mazeId}/sessions", null);
+        var postContent = await postResponse.Content.ReadAsStringAsync();
+        var postJson = JsonDocument.Parse(postContent);
+        var sessionId = postJson.RootElement.GetProperty("id").GetString();
+
+        var response = await _client.GetAsync($"/api/mazes/{mazeId}/sessions/{sessionId}");
+        var content = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(content);
+
+        var links = json.RootElement.GetProperty("_links");
+        Assert.False(links.TryGetProperty("west", out _), "West link should not exist at (0,0) boundary");
+    }
 }

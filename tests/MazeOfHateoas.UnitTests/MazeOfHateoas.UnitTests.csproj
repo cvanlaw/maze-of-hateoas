@@ -24,6 +24,7 @@
     <ProjectReference Include="..\..\src\MazeOfHateoas.Domain\MazeOfHateoas.Domain.csproj" />
     <ProjectReference Include="..\..\src\MazeOfHateoas.Application\MazeOfHateoas.Application.csproj" />
     <ProjectReference Include="..\..\src\MazeOfHateoas.Infrastructure\MazeOfHateoas.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\MazeOfHateoas.Api\MazeOfHateoas.Api.csproj" />
   </ItemGroup>
 
 </Project>

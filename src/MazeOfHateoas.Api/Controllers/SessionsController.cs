@@ -1,5 +1,6 @@
 using MazeOfHateoas.Api.Models;
 using MazeOfHateoas.Application.Interfaces;
+using MazeOfHateoas.Application.Services;
 using MazeOfHateoas.Domain;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,13 +12,16 @@ public class SessionsController : ControllerBase
 {
     private readonly IMazeRepository _mazeRepository;
     private readonly ISessionRepository _sessionRepository;
+    private readonly ISessionLinkGenerator _linkGenerator;
 
     public SessionsController(
         IMazeRepository mazeRepository,
-        ISessionRepository sessionRepository)
+        ISessionRepository sessionRepository,
+        ISessionLinkGenerator linkGenerator)
     {
         _mazeRepository = mazeRepository;
         _sessionRepository = sessionRepository;
+        _linkGenerator = linkGenerator;
     }
 
     [HttpPost]
@@ -83,48 +87,8 @@ public class SessionsController : ControllerBase
 
     private SessionResponse BuildSessionResponse(MazeSession session, Maze maze)
     {
-        var links = new Dictionary<string, Link>
-        {
-            ["self"] = new Link(
-                $"/api/mazes/{session.MazeId}/sessions/{session.Id}",
-                "self",
-                "GET")
-        };
-
-        var cell = maze.GetCell(session.CurrentPosition.X, session.CurrentPosition.Y);
-
-        // Add move links for available directions (considering walls AND boundaries)
-        if (cell.CanMove(Direction.North) && session.CurrentPosition.Y > 0)
-        {
-            links["north"] = new Link(
-                $"/api/mazes/{session.MazeId}/sessions/{session.Id}/move/north",
-                "move",
-                "POST");
-        }
-
-        if (cell.CanMove(Direction.South) && session.CurrentPosition.Y < maze.Height - 1)
-        {
-            links["south"] = new Link(
-                $"/api/mazes/{session.MazeId}/sessions/{session.Id}/move/south",
-                "move",
-                "POST");
-        }
-
-        if (cell.CanMove(Direction.East) && session.CurrentPosition.X < maze.Width - 1)
-        {
-            links["east"] = new Link(
-                $"/api/mazes/{session.MazeId}/sessions/{session.Id}/move/east",
-                "move",
-                "POST");
-        }
-
-        if (cell.CanMove(Direction.West) && session.CurrentPosition.X > 0)
-        {
-            links["west"] = new Link(
-                $"/api/mazes/{session.MazeId}/sessions/{session.Id}/move/west",
-                "move",
-                "POST");
-        }
+        var generatedLinks = _linkGenerator.GenerateLinks(session, maze);
+        var links = generatedLinks.ToDictionary(kvp => kvp.Key, kvp => (Link)kvp.Value);
 
         return new SessionResponse
         {

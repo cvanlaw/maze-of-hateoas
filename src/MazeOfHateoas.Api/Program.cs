@@ -1,5 +1,7 @@
 using MazeOfHateoas.Api.Configuration;
+using MazeOfHateoas.Api.Services;
 using MazeOfHateoas.Application.Interfaces;
+using MazeOfHateoas.Application.Services;
 using MazeOfHateoas.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,6 +28,7 @@ builder.Services.Configure<MazeSettings>(options =>
 builder.Services.AddSingleton<IMazeGenerator, MazeGenerator>();
 builder.Services.AddSingleton<IMazeRepository, InMemoryMazeRepository>();
 builder.Services.AddSingleton<ISessionRepository, InMemorySessionRepository>();
+builder.Services.AddSingleton<ISessionLinkGenerator, SessionLinkGenerator>();
 
 var app = builder.Build();
 
