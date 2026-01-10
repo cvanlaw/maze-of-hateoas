@@ -2,6 +2,7 @@ using MazeOfHateoas.Api.Configuration;
 using MazeOfHateoas.Api.Models;
 using MazeOfHateoas.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace MazeOfHateoas.Api.Controllers;
@@ -17,15 +18,18 @@ public class MazesController : ControllerBase
     private readonly IMazeGenerator _mazeGenerator;
     private readonly IMazeRepository _mazeRepository;
     private readonly MazeSettings _settings;
+    private readonly ILogger<MazesController> _logger;
 
     public MazesController(
         IMazeGenerator mazeGenerator,
         IMazeRepository mazeRepository,
-        IOptions<MazeSettings> settings)
+        IOptions<MazeSettings> settings,
+        ILogger<MazesController> logger)
     {
         _mazeGenerator = mazeGenerator;
         _mazeRepository = mazeRepository;
         _settings = settings.Value;
+        _logger = logger;
     }
 
     /// <summary>
@@ -100,6 +104,9 @@ public class MazesController : ControllerBase
 
         var maze = _mazeGenerator.Generate(width, height);
         await _mazeRepository.SaveAsync(maze);
+
+        _logger.LogInformation("Maze created: {MazeId} ({Width}x{Height})",
+            maze.Id, width, height);
 
         var response = new MazeResponse
         {
@@ -178,6 +185,7 @@ public class MazesController : ControllerBase
 
         if (maze == null)
         {
+            _logger.LogWarning("Maze not found: {MazeId}", id);
             return NotFound(new ProblemDetails
             {
                 Type = "https://tools.ietf.org/html/rfc7231#section-6.5.4",
