@@ -25,6 +25,7 @@ builder.Services.Configure<MazeSettings>(options =>
 // Register application services
 builder.Services.AddSingleton<IMazeGenerator, MazeGenerator>();
 builder.Services.AddSingleton<IMazeRepository, InMemoryMazeRepository>();
+builder.Services.AddSingleton<ISessionRepository, InMemorySessionRepository>();
 
 var app = builder.Build();
 
