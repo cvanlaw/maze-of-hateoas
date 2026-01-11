@@ -2,6 +2,8 @@ using MazeOfHateoas.Api.Configuration;
 using MazeOfHateoas.Api.Helpers;
 using MazeOfHateoas.Api.Models;
 using MazeOfHateoas.Application.Interfaces;
+using MazeOfHateoas.Application.Services;
+using MazeOfHateoas.Domain;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,17 +22,20 @@ public class MazesController : ControllerBase
     private readonly IMazeRepository _mazeRepository;
     private readonly MazeSettings _settings;
     private readonly ILogger<MazesController> _logger;
+    private readonly IMazeLinkGenerator _linkGenerator;
 
     public MazesController(
         IMazeGenerator mazeGenerator,
         IMazeRepository mazeRepository,
         IOptions<MazeSettings> settings,
-        ILogger<MazesController> logger)
+        ILogger<MazesController> logger,
+        IMazeLinkGenerator linkGenerator)
     {
         _mazeGenerator = mazeGenerator;
         _mazeRepository = mazeRepository;
         _settings = settings.Value;
         _logger = logger;
+        _linkGenerator = linkGenerator;
     }
 
     /// <summary>
@@ -85,20 +90,7 @@ public class MazesController : ControllerBase
         _logger.LogInformation("Maze created: {MazeId} ({Width}x{Height})",
             maze.Id, width, height);
 
-        var response = new MazeResponse
-        {
-            Id = maze.Id,
-            Width = maze.Width,
-            Height = maze.Height,
-            Start = new PositionDto(maze.Start.X, maze.Start.Y),
-            End = new PositionDto(maze.End.X, maze.End.Y),
-            CreatedAt = maze.CreatedAt,
-            Links = new Dictionary<string, Link>
-            {
-                ["self"] = new Link($"/api/mazes/{maze.Id}", "self", "GET"),
-                ["start"] = new Link($"/api/mazes/{maze.Id}/sessions", "start", "POST")
-            }
-        };
+        var response = BuildMazeResponse(maze);
 
         return CreatedAtAction(nameof(GetMaze), new { id = maze.Id }, response);
     }
@@ -120,23 +112,8 @@ public class MazesController : ControllerBase
 
         var response = new MazeListResponse
         {
-            Mazes = mazes.Select(maze => new MazeSummaryResponse
-            {
-                Id = maze.Id,
-                Width = maze.Width,
-                Height = maze.Height,
-                CreatedAt = maze.CreatedAt,
-                Links = new Dictionary<string, Link>
-                {
-                    ["self"] = new Link($"/api/mazes/{maze.Id}", "self", "GET"),
-                    ["start"] = new Link($"/api/mazes/{maze.Id}/sessions", "start", "POST")
-                }
-            }).ToList(),
-            Links = new Dictionary<string, Link>
-            {
-                ["self"] = new Link("/api/mazes", "self", "GET"),
-                ["create"] = new Link("/api/mazes", "create", "POST")
-            }
+            Mazes = mazes.Select(BuildMazeSummaryResponse).ToList(),
+            Links = ConvertLinks(_linkGenerator.GenerateListLinks())
         };
 
         return Ok(response);
@@ -167,7 +144,14 @@ public class MazesController : ControllerBase
                 $"Maze with ID '{id}' was not found", $"/api/mazes/{id}"));
         }
 
-        var response = new MazeResponse
+        var response = BuildMazeResponse(maze);
+
+        return Ok(response);
+    }
+
+    private MazeResponse BuildMazeResponse(Maze maze)
+    {
+        return new MazeResponse
         {
             Id = maze.Id,
             Width = maze.Width,
@@ -175,13 +159,26 @@ public class MazesController : ControllerBase
             Start = new PositionDto(maze.Start.X, maze.Start.Y),
             End = new PositionDto(maze.End.X, maze.End.Y),
             CreatedAt = maze.CreatedAt,
-            Links = new Dictionary<string, Link>
-            {
-                ["self"] = new Link($"/api/mazes/{maze.Id}", "self", "GET"),
-                ["start"] = new Link($"/api/mazes/{maze.Id}/sessions", "start", "POST")
-            }
+            Links = ConvertLinks(_linkGenerator.GenerateMazeLinks(maze.Id))
         };
+    }
 
-        return Ok(response);
+    private MazeSummaryResponse BuildMazeSummaryResponse(Maze maze)
+    {
+        return new MazeSummaryResponse
+        {
+            Id = maze.Id,
+            Width = maze.Width,
+            Height = maze.Height,
+            CreatedAt = maze.CreatedAt,
+            Links = ConvertLinks(_linkGenerator.GenerateMazeLinks(maze.Id))
+        };
+    }
+
+    private static Dictionary<string, Link> ConvertLinks(Dictionary<string, object> links)
+    {
+        return links.ToDictionary(
+            kvp => kvp.Key,
+            kvp => (Link)kvp.Value);
     }
 }
