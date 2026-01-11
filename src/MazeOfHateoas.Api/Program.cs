@@ -81,6 +81,7 @@ builder.Services.AddSingleton<IMazeGenerator, MazeGenerator>();
 builder.Services.AddSingleton<IMazeRepository, InMemoryMazeRepository>();
 builder.Services.AddSingleton<ISessionRepository, InMemorySessionRepository>();
 builder.Services.AddSingleton<ISessionLinkGenerator, SessionLinkGenerator>();
+builder.Services.AddSingleton<IMazeLinkGenerator, MazeLinkGenerator>();
 
 var app = builder.Build();
 
