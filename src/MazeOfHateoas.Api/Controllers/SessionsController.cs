@@ -1,3 +1,4 @@
+using MazeOfHateoas.Api.Helpers;
 using MazeOfHateoas.Api.Models;
 using MazeOfHateoas.Application.Interfaces;
 using MazeOfHateoas.Application.Services;
@@ -57,14 +58,9 @@ public class SessionsController : ControllerBase
 
         if (maze == null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.4",
-                Title = "Not Found",
-                Status = 404,
-                Detail = $"Maze with ID '{mazeId}' was not found",
-                Instance = $"/api/mazes/{mazeId}/sessions"
-            });
+            return NotFound(ProblemDetailsFactory.NotFound(
+                $"Maze with ID '{mazeId}' was not found",
+                $"/api/mazes/{mazeId}/sessions"));
         }
 
         var session = new MazeSession(Guid.NewGuid(), mazeId, maze.Start);
@@ -101,28 +97,18 @@ public class SessionsController : ControllerBase
         var maze = await _mazeRepository.GetByIdAsync(mazeId);
         if (maze == null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.4",
-                Title = "Not Found",
-                Status = 404,
-                Detail = $"Maze with ID '{mazeId}' was not found",
-                Instance = $"/api/mazes/{mazeId}/sessions/{sessionId}"
-            });
+            return NotFound(ProblemDetailsFactory.NotFound(
+                $"Maze with ID '{mazeId}' was not found",
+                $"/api/mazes/{mazeId}/sessions/{sessionId}"));
         }
 
         var session = await _sessionRepository.GetByIdAsync(sessionId);
         if (session == null || session.MazeId != mazeId)
         {
             _logger.LogWarning("Session not found: {SessionId}", sessionId);
-            return NotFound(new ProblemDetails
-            {
-                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.4",
-                Title = "Not Found",
-                Status = 404,
-                Detail = $"Session with ID '{sessionId}' was not found",
-                Instance = $"/api/mazes/{mazeId}/sessions/{sessionId}"
-            });
+            return NotFound(ProblemDetailsFactory.NotFound(
+                $"Session with ID '{sessionId}' was not found",
+                $"/api/mazes/{mazeId}/sessions/{sessionId}"));
         }
 
         var response = BuildSessionResponse(session, maze);
@@ -157,78 +143,48 @@ public class SessionsController : ControllerBase
     {
         if (!TryParseDirection(direction, out var parsedDirection))
         {
-            return BadRequest(new ProblemDetails
-            {
-                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
-                Title = "Bad Request",
-                Status = 400,
-                Detail = $"Invalid direction '{direction}'. Valid directions are: north, south, east, west",
-                Instance = $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"
-            });
+            return BadRequest(ProblemDetailsFactory.BadRequest(
+                $"Invalid direction '{direction}'. Valid directions are: north, south, east, west",
+                $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"));
         }
 
         var maze = await _mazeRepository.GetByIdAsync(mazeId);
         if (maze == null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.4",
-                Title = "Not Found",
-                Status = 404,
-                Detail = $"Maze with ID '{mazeId}' was not found",
-                Instance = $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"
-            });
+            return NotFound(ProblemDetailsFactory.NotFound(
+                $"Maze with ID '{mazeId}' was not found",
+                $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"));
         }
 
         var session = await _sessionRepository.GetByIdAsync(sessionId);
         if (session == null || session.MazeId != mazeId)
         {
-            return NotFound(new ProblemDetails
-            {
-                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.4",
-                Title = "Not Found",
-                Status = 404,
-                Detail = $"Session with ID '{sessionId}' was not found",
-                Instance = $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"
-            });
+            return NotFound(ProblemDetailsFactory.NotFound(
+                $"Session with ID '{sessionId}' was not found",
+                $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"));
         }
 
         var moveResult = session.Move(parsedDirection, maze);
 
         if (moveResult == MoveResult.AlreadyCompleted)
         {
-            return BadRequest(new ProblemDetails
-            {
-                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
-                Title = "Bad Request",
-                Status = 400,
-                Detail = "Cannot move - session is already completed",
-                Instance = $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"
-            });
+            return BadRequest(ProblemDetailsFactory.BadRequest(
+                "Cannot move - session is already completed",
+                $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"));
         }
 
         if (moveResult == MoveResult.Blocked)
         {
-            return BadRequest(new ProblemDetails
-            {
-                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
-                Title = "Bad Request",
-                Status = 400,
-                Detail = $"Cannot move {direction} - blocked by wall",
-                Instance = $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"
-            });
+            return BadRequest(ProblemDetailsFactory.BadRequest(
+                $"Cannot move {direction} - blocked by wall",
+                $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"));
         }
 
         if (moveResult == MoveResult.OutOfBounds)
         {
-            return BadRequest(new ProblemDetails
-            {
-                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
-                Title = "Bad Request",
-                Status = 400,
-                Detail = $"Cannot move {direction} - out of bounds",
-                Instance = $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"
-            });
+            return BadRequest(ProblemDetailsFactory.BadRequest(
+                $"Cannot move {direction} - out of bounds",
+                $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"));
         }
 
         await _sessionRepository.SaveAsync(session);
