@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace MazeOfHateoas.Api.Helpers;
 
-public static class ProblemDetailsFactory
+public static class ApiProblemDetails
 {
     private const string BadRequestType = "https://tools.ietf.org/html/rfc7231#section-6.5.1";
     private const string NotFoundType = "https://tools.ietf.org/html/rfc7231#section-6.5.4";

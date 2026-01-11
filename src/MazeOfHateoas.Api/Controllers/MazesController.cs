@@ -61,26 +61,26 @@ public class MazesController : ControllerBase
         // Validate dimensions are positive
         if (width <= 0)
         {
-            return BadRequest(ProblemDetailsFactory.BadRequest(
+            return BadRequest(ApiProblemDetails.BadRequest(
                 "Width must be a positive integer", "/api/mazes"));
         }
 
         if (height <= 0)
         {
-            return BadRequest(ProblemDetailsFactory.BadRequest(
+            return BadRequest(ApiProblemDetails.BadRequest(
                 "Height must be a positive integer", "/api/mazes"));
         }
 
         // Validate dimensions don't exceed max
         if (width > _settings.MaxWidth)
         {
-            return BadRequest(ProblemDetailsFactory.BadRequest(
+            return BadRequest(ApiProblemDetails.BadRequest(
                 $"Width cannot exceed {_settings.MaxWidth}", "/api/mazes"));
         }
 
         if (height > _settings.MaxHeight)
         {
-            return BadRequest(ProblemDetailsFactory.BadRequest(
+            return BadRequest(ApiProblemDetails.BadRequest(
                 $"Height cannot exceed {_settings.MaxHeight}", "/api/mazes"));
         }
 
@@ -140,7 +140,7 @@ public class MazesController : ControllerBase
         if (maze == null)
         {
             _logger.LogWarning("Maze not found: {MazeId}", id);
-            return NotFound(ProblemDetailsFactory.NotFound(
+            return NotFound(ApiProblemDetails.NotFound(
                 $"Maze with ID '{id}' was not found", $"/api/mazes/{id}"));
         }
 

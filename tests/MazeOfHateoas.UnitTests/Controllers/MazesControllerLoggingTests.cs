@@ -1,7 +1,9 @@
 using MazeOfHateoas.Api.Configuration;
 using MazeOfHateoas.Api.Controllers;
 using MazeOfHateoas.Api.Models;
+using MazeOfHateoas.Api.Services;
 using MazeOfHateoas.Application.Interfaces;
+using MazeOfHateoas.Application.Services;
 using MazeOfHateoas.Domain;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
@@ -28,7 +30,8 @@ public class MazesControllerLoggingTests
             MaxWidth = 50,
             MaxHeight = 50
         });
-        _controller = new MazesController(_mazeGenerator, _mazeRepository, settings, _logger);
+        var linkGenerator = new MazeLinkGenerator();
+        _controller = new MazesController(_mazeGenerator, _mazeRepository, settings, _logger, linkGenerator);
     }
 
     [Fact]

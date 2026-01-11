@@ -4,12 +4,12 @@ using Xunit;
 
 namespace MazeOfHateoas.UnitTests.Helpers;
 
-public class ProblemDetailsFactoryTests
+public class ApiProblemDetailsTests
 {
     [Fact]
     public void BadRequest_ReturnsCorrectProblemDetails()
     {
-        var result = ProblemDetailsFactory.BadRequest("Test detail", "/api/test");
+        var result = ApiProblemDetails.BadRequest("Test detail", "/api/test");
 
         Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.5.1", result.Type);
         Assert.Equal("Bad Request", result.Title);
@@ -21,7 +21,7 @@ public class ProblemDetailsFactoryTests
     [Fact]
     public void NotFound_ReturnsCorrectProblemDetails()
     {
-        var result = ProblemDetailsFactory.NotFound("Not found detail", "/api/items/123");
+        var result = ApiProblemDetails.NotFound("Not found detail", "/api/items/123");
 
         Assert.Equal("https://tools.ietf.org/html/rfc7231#section-6.5.4", result.Type);
         Assert.Equal("Not Found", result.Title);

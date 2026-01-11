@@ -58,7 +58,7 @@ public class SessionsController : ControllerBase
 
         if (maze == null)
         {
-            return NotFound(ProblemDetailsFactory.NotFound(
+            return NotFound(ApiProblemDetails.NotFound(
                 $"Maze with ID '{mazeId}' was not found",
                 $"/api/mazes/{mazeId}/sessions"));
         }
@@ -97,7 +97,7 @@ public class SessionsController : ControllerBase
         var maze = await _mazeRepository.GetByIdAsync(mazeId);
         if (maze == null)
         {
-            return NotFound(ProblemDetailsFactory.NotFound(
+            return NotFound(ApiProblemDetails.NotFound(
                 $"Maze with ID '{mazeId}' was not found",
                 $"/api/mazes/{mazeId}/sessions/{sessionId}"));
         }
@@ -106,7 +106,7 @@ public class SessionsController : ControllerBase
         if (session == null || session.MazeId != mazeId)
         {
             _logger.LogWarning("Session not found: {SessionId}", sessionId);
-            return NotFound(ProblemDetailsFactory.NotFound(
+            return NotFound(ApiProblemDetails.NotFound(
                 $"Session with ID '{sessionId}' was not found",
                 $"/api/mazes/{mazeId}/sessions/{sessionId}"));
         }
@@ -143,7 +143,7 @@ public class SessionsController : ControllerBase
     {
         if (!TryParseDirection(direction, out var parsedDirection))
         {
-            return BadRequest(ProblemDetailsFactory.BadRequest(
+            return BadRequest(ApiProblemDetails.BadRequest(
                 $"Invalid direction '{direction}'. Valid directions are: north, south, east, west",
                 $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"));
         }
@@ -151,7 +151,7 @@ public class SessionsController : ControllerBase
         var maze = await _mazeRepository.GetByIdAsync(mazeId);
         if (maze == null)
         {
-            return NotFound(ProblemDetailsFactory.NotFound(
+            return NotFound(ApiProblemDetails.NotFound(
                 $"Maze with ID '{mazeId}' was not found",
                 $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"));
         }
@@ -159,7 +159,7 @@ public class SessionsController : ControllerBase
         var session = await _sessionRepository.GetByIdAsync(sessionId);
         if (session == null || session.MazeId != mazeId)
         {
-            return NotFound(ProblemDetailsFactory.NotFound(
+            return NotFound(ApiProblemDetails.NotFound(
                 $"Session with ID '{sessionId}' was not found",
                 $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"));
         }
@@ -168,21 +168,21 @@ public class SessionsController : ControllerBase
 
         if (moveResult == MoveResult.AlreadyCompleted)
         {
-            return BadRequest(ProblemDetailsFactory.BadRequest(
+            return BadRequest(ApiProblemDetails.BadRequest(
                 "Cannot move - session is already completed",
                 $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"));
         }
 
         if (moveResult == MoveResult.Blocked)
         {
-            return BadRequest(ProblemDetailsFactory.BadRequest(
+            return BadRequest(ApiProblemDetails.BadRequest(
                 $"Cannot move {direction} - blocked by wall",
                 $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"));
         }
 
         if (moveResult == MoveResult.OutOfBounds)
         {
-            return BadRequest(ProblemDetailsFactory.BadRequest(
+            return BadRequest(ApiProblemDetails.BadRequest(
                 $"Cannot move {direction} - out of bounds",
                 $"/api/mazes/{mazeId}/sessions/{sessionId}/move/{direction}"));
         }
