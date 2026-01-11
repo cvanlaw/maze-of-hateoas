@@ -3,8 +3,8 @@ using MazeOfHateoas.Api.Controllers;
 using MazeOfHateoas.Api.Models;
 using MazeOfHateoas.Api.Services;
 using MazeOfHateoas.Application.Interfaces;
-using MazeOfHateoas.Application.Services;
 using MazeOfHateoas.Domain;
+using MazeOfHateoas.UnitTests.Helpers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 using Microsoft.Extensions.Options;
@@ -56,23 +56,6 @@ public class MazesControllerLoggingTests
         var logEntry = Assert.Single(_logger.Collector.GetSnapshot());
         Assert.Equal(LogLevel.Warning, logEntry.Level);
         Assert.Contains("not found", logEntry.Message);
-    }
-
-    private class TestMazeRepository : IMazeRepository
-    {
-        private readonly Dictionary<Guid, Maze> _mazes = new();
-
-        public Task<Maze?> GetByIdAsync(Guid id) =>
-            Task.FromResult(_mazes.GetValueOrDefault(id));
-
-        public Task<IEnumerable<Maze>> GetAllAsync() =>
-            Task.FromResult<IEnumerable<Maze>>(_mazes.Values);
-
-        public Task SaveAsync(Maze maze)
-        {
-            _mazes[maze.Id] = maze;
-            return Task.CompletedTask;
-        }
     }
 
     private class TestMazeGenerator : IMazeGenerator
