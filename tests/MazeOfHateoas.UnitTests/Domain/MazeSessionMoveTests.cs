@@ -310,4 +310,29 @@ public class MazeSessionMoveTests
 
         Assert.Equal(0, session.MoveCount);
     }
+
+    [Fact]
+    public void Move_Success_AddsNewPositionToVisitedCells()
+    {
+        var maze = TestDataBuilders.CreateTestMaze(3, 3, allCellsOpen: true);
+        var session = TestDataBuilders.CreateTestSession(maze.Id);
+
+        session.Move(Direction.East, maze);
+
+        Assert.Contains(new Position(0, 0), session.VisitedCells);
+        Assert.Contains(new Position(1, 0), session.VisitedCells);
+        Assert.Equal(2, session.VisitedCells.Count);
+    }
+
+    [Fact]
+    public void Move_ToAlreadyVisitedCell_DoesNotDuplicateInVisitedCells()
+    {
+        var maze = TestDataBuilders.CreateTestMaze(3, 3, allCellsOpen: true);
+        var session = TestDataBuilders.CreateTestSession(maze.Id);
+
+        session.Move(Direction.East, maze);
+        session.Move(Direction.West, maze);
+
+        Assert.Equal(2, session.VisitedCells.Count);
+    }
 }

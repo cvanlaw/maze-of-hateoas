@@ -35,6 +35,7 @@ public class MazeSession
 
         CurrentPosition = newPosition;
         MoveCount++;
+        VisitedCells.Add(CurrentPosition);
 
         if (CurrentPosition == maze.End)
             State = SessionState.Completed;
