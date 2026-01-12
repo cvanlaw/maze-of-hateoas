@@ -57,4 +57,18 @@ public class InMemorySessionRepositoryTests
         Assert.Contains(result, s => s.Id == session1.Id);
         Assert.Contains(result, s => s.Id == session2.Id);
     }
+
+    [Fact]
+    public async Task GetAllAsync_ReturnsAllSessions()
+    {
+        var repository = new InMemorySessionRepository();
+        var session1 = new MazeSession(Guid.NewGuid(), Guid.NewGuid(), new Position(0, 0));
+        var session2 = new MazeSession(Guid.NewGuid(), Guid.NewGuid(), new Position(0, 0));
+        await repository.SaveAsync(session1);
+        await repository.SaveAsync(session2);
+
+        var all = await repository.GetAllAsync();
+
+        Assert.Equal(2, all.Count());
+    }
 }

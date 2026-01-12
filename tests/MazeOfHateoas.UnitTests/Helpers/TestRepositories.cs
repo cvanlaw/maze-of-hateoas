@@ -33,6 +33,9 @@ public class TestSessionRepository : ISessionRepository
         Task.FromResult<IEnumerable<MazeSession>>(
             _sessions.Values.Where(s => s.MazeId == mazeId).ToList());
 
+    public Task<IEnumerable<MazeSession>> GetAllAsync() =>
+        Task.FromResult<IEnumerable<MazeSession>>(_sessions.Values.ToList());
+
     public Task SaveAsync(MazeSession session)
     {
         _sessions[session.Id] = session;

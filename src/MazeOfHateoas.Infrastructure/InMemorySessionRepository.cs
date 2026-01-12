@@ -20,6 +20,11 @@ public class InMemorySessionRepository : ISessionRepository
         return Task.FromResult<IEnumerable<MazeSession>>(sessions);
     }
 
+    public Task<IEnumerable<MazeSession>> GetAllAsync()
+    {
+        return Task.FromResult<IEnumerable<MazeSession>>(_sessions.Values.ToList());
+    }
+
     public Task SaveAsync(MazeSession session)
     {
         _sessions[session.Id] = session;
