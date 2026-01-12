@@ -1,5 +1,6 @@
 using MazeOfHateoas.Solver.Configuration;
 using MazeOfHateoas.Solver.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -24,12 +25,17 @@ try
 
     builder.Services.Configure<SolverSettings>(options =>
     {
-        options.ApiBaseUrl = builder.Configuration["SOLVER_API_BASE_URL"] ?? "http://localhost:8080";
-        options.MazeWidth = int.Parse(builder.Configuration["SOLVER_MAZE_WIDTH"] ?? "10");
-        options.MazeHeight = int.Parse(builder.Configuration["SOLVER_MAZE_HEIGHT"] ?? "10");
-        options.DelayBetweenMazesMs = int.Parse(builder.Configuration["SOLVER_DELAY_BETWEEN_MAZES_MS"] ?? "2000");
-        options.DelayBetweenMovesMs = int.Parse(builder.Configuration["SOLVER_DELAY_BETWEEN_MOVES_MS"] ?? "0");
-        options.StatsIntervalMazes = int.Parse(builder.Configuration["SOLVER_STATS_INTERVAL_MAZES"] ?? "10");
+        var section = builder.Configuration.GetSection(SolverSettings.SectionName);
+        section.Bind(options);
+
+        // Environment variable overrides
+        options.ApiBaseUrl = builder.Configuration["SOLVER_API_BASE_URL"] ?? options.ApiBaseUrl;
+        options.MazeWidth = int.TryParse(builder.Configuration["SOLVER_MAZE_WIDTH"], out var w) ? w : options.MazeWidth;
+        options.MazeHeight = int.TryParse(builder.Configuration["SOLVER_MAZE_HEIGHT"], out var h) ? h : options.MazeHeight;
+        options.DelayBetweenMazesMs = int.TryParse(builder.Configuration["SOLVER_DELAY_BETWEEN_MAZES_MS"], out var dm) ? dm : options.DelayBetweenMazesMs;
+        options.DelayBetweenMovesMs = int.TryParse(builder.Configuration["SOLVER_DELAY_BETWEEN_MOVES_MS"], out var dmv) ? dmv : options.DelayBetweenMovesMs;
+        options.StatsIntervalMazes = int.TryParse(builder.Configuration["SOLVER_STATS_INTERVAL_MAZES"], out var si) ? si : options.StatsIntervalMazes;
+        options.Algorithm = builder.Configuration["SOLVER_ALGORITHM"] ?? options.Algorithm;
     });
 
     builder.Services.AddHttpClient<IMazeApiClient, MazeApiClient>((sp, client) =>
