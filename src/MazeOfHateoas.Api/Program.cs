@@ -1,5 +1,6 @@
 using System.Reflection;
 using MazeOfHateoas.Api.Configuration;
+using MazeOfHateoas.Api.Hubs;
 using MazeOfHateoas.Api.Services;
 using MazeOfHateoas.Application.Interfaces;
 using MazeOfHateoas.Application.Services;
@@ -27,6 +28,7 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 
 // Add services to the container.
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -137,6 +139,7 @@ app.UseSwaggerUI(options =>
 
 app.UseHttpsRedirection();
 app.MapControllers();
+app.MapHub<MetricsHub>("/hubs/metrics");
 
 // Health check endpoint
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
