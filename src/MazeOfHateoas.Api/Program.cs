@@ -29,6 +29,17 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Dashboard", policy =>
+        policy.WithOrigins(
+                "http://localhost:5173",
+                "http://localhost:4173",
+                "http://dashboard:80")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials());
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -139,6 +150,7 @@ app.UseSwaggerUI(options =>
 });
 
 app.UseHttpsRedirection();
+app.UseCors("Dashboard");
 app.MapControllers();
 app.MapHub<MetricsHub>("/hubs/metrics");
 
