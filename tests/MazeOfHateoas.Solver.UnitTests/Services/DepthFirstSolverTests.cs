@@ -7,18 +7,18 @@ using Moq;
 
 namespace MazeOfHateoas.Solver.UnitTests.Services;
 
-public class HateoasSolverTests
+public class DepthFirstSolverTests
 {
     private readonly Mock<IMazeApiClient> _mockApiClient;
-    private readonly Mock<ILogger<HateoasSolver>> _mockLogger;
+    private readonly Mock<ILogger<DepthFirstSolver>> _mockLogger;
     private readonly IOptions<SolverSettings> _settings;
     private readonly Guid _mazeId = Guid.NewGuid();
     private readonly Guid _sessionId = Guid.NewGuid();
 
-    public HateoasSolverTests()
+    public DepthFirstSolverTests()
     {
         _mockApiClient = new Mock<IMazeApiClient>();
-        _mockLogger = new Mock<ILogger<HateoasSolver>>();
+        _mockLogger = new Mock<ILogger<DepthFirstSolver>>();
         _settings = Options.Create(new SolverSettings { DelayBetweenMovesMs = 0 });
     }
 
@@ -31,7 +31,7 @@ public class HateoasSolverTests
         _mockApiClient.Setup(c => c.StartSessionAsync(It.IsAny<Link>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(completedSession);
 
-        var solver = new HateoasSolver(_mockApiClient.Object, _settings, _mockLogger.Object);
+        var solver = new DepthFirstSolver(_mockApiClient.Object, _settings, _mockLogger.Object);
 
         var result = await solver.SolveAsync(maze);
 
@@ -51,7 +51,7 @@ public class HateoasSolverTests
         _mockApiClient.Setup(c => c.MoveAsync(It.IsAny<Link>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(endSession);
 
-        var solver = new HateoasSolver(_mockApiClient.Object, _settings, _mockLogger.Object);
+        var solver = new DepthFirstSolver(_mockApiClient.Object, _settings, _mockLogger.Object);
 
         var result = await solver.SolveAsync(maze);
 
@@ -78,7 +78,7 @@ public class HateoasSolverTests
         _mockApiClient.Setup(c => c.MoveAsync(It.IsAny<Link>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(() => moveSequence.Dequeue());
 
-        var solver = new HateoasSolver(_mockApiClient.Object, _settings, _mockLogger.Object);
+        var solver = new DepthFirstSolver(_mockApiClient.Object, _settings, _mockLogger.Object);
 
         var result = await solver.SolveAsync(maze);
 
@@ -104,7 +104,7 @@ public class HateoasSolverTests
             .Callback<Link, CancellationToken>((link, _) => linkCaptures.Add(link.Href))
             .ReturnsAsync(() => moveSequence.Dequeue());
 
-        var solver = new HateoasSolver(_mockApiClient.Object, _settings, _mockLogger.Object);
+        var solver = new DepthFirstSolver(_mockApiClient.Object, _settings, _mockLogger.Object);
 
         await solver.SolveAsync(maze);
 

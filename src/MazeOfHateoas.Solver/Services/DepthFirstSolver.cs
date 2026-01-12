@@ -6,18 +6,18 @@ using Microsoft.Extensions.Options;
 
 namespace MazeOfHateoas.Solver.Services;
 
-public class HateoasSolver : ISolver
+public class DepthFirstSolver : ISolver
 {
     private static readonly string[] Directions = ["north", "south", "east", "west"];
 
     private readonly IMazeApiClient _apiClient;
     private readonly SolverSettings _settings;
-    private readonly ILogger<HateoasSolver> _logger;
+    private readonly ILogger<DepthFirstSolver> _logger;
 
-    public HateoasSolver(
+    public DepthFirstSolver(
         IMazeApiClient apiClient,
         IOptions<SolverSettings> settings,
-        ILogger<HateoasSolver> logger)
+        ILogger<DepthFirstSolver> logger)
     {
         _apiClient = apiClient;
         _settings = settings.Value;

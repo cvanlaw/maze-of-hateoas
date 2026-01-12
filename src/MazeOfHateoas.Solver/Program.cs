@@ -44,7 +44,7 @@ try
         client.BaseAddress = new Uri(config["SOLVER_API_BASE_URL"] ?? "http://localhost:8080");
     });
 
-    builder.Services.AddSingleton<ISolver, HateoasSolver>();
+    builder.Services.AddSingleton<ISolver, DepthFirstSolver>();
     builder.Services.AddHostedService<SolverHostedService>();
 
     var app = builder.Build();
