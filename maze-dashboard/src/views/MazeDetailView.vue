@@ -15,6 +15,7 @@ const metrics = ref<MazeMetrics | null>(null);
 const loading = ref(true);
 const error = ref<string | null>(null);
 const showHeatmap = ref(false);
+let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 const {
   isConnected,
@@ -46,6 +47,16 @@ async function loadData() {
   }
 }
 
+function scheduleRefresh() {
+  if (refreshTimer) {
+    clearTimeout(refreshTimer);
+  }
+  // Shorter debounce for detail view - more responsive
+  refreshTimer = setTimeout(() => {
+    loadData();
+  }, 500);
+}
+
 function goBack() {
   router.push('/');
 }
@@ -56,19 +67,22 @@ onMounted(async () => {
   await subscribeToMaze(mazeId.value);
 
   onSessionStarted.value = (event) => {
-    if (event.mazeId === mazeId.value) loadData();
+    if (event.mazeId === mazeId.value) scheduleRefresh();
   };
 
   onSessionMoved.value = (event) => {
-    if (event.mazeId === mazeId.value) loadData();
+    if (event.mazeId === mazeId.value) scheduleRefresh();
   };
 
   onSessionCompleted.value = (event) => {
-    if (event.mazeId === mazeId.value) loadData();
+    if (event.mazeId === mazeId.value) scheduleRefresh();
   };
 });
 
 onUnmounted(async () => {
+  if (refreshTimer) {
+    clearTimeout(refreshTimer);
+  }
   await unsubscribeFromMaze(mazeId.value);
 });
 </script>
