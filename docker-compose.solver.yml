@@ -1,0 +1,30 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Serilog__MinimumLevel__Default=Information
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/mazes || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  solver:
+    build:
+      context: .
+      dockerfile: Dockerfile.solver
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      - SOLVER_API_BASE_URL=http://api:8080
+      - SOLVER_MAZE_WIDTH=10
+      - SOLVER_MAZE_HEIGHT=10
+      - SOLVER_DELAY_BETWEEN_MAZES_MS=2000
+      - SOLVER_DELAY_BETWEEN_MOVES_MS=0
+      - SOLVER_STATS_INTERVAL_MAZES=10
+      - Serilog__MinimumLevel__Default=Information
