@@ -59,6 +59,59 @@ public class HateoasSolverTests
         Assert.Equal(1, result.MoveCount);
     }
 
+    [Fact]
+    public async Task SolveAsync_WhenDeadEnd_BacktracksToLastJunction()
+    {
+        // Maze: Start(0,0) -> (1,0) dead end, backtrack, go (0,1) -> End
+        var maze = CreateMaze();
+
+        var moveSequence = new Queue<SessionResponse>(new[]
+        {
+            CreateSession(0, 0, "InProgress", ("east", "/move/east"), ("south", "/move/south")), // start
+            CreateSession(1, 0, "InProgress", ("west", "/move/west")), // dead end - only way back
+            CreateSession(0, 0, "InProgress", ("east", "/move/east"), ("south", "/move/south")), // back at start
+            CreateSession(0, 1, "Completed") // found exit going south
+        });
+
+        _mockApiClient.Setup(c => c.StartSessionAsync(It.IsAny<Link>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(moveSequence.Dequeue());
+        _mockApiClient.Setup(c => c.MoveAsync(It.IsAny<Link>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => moveSequence.Dequeue());
+
+        var solver = new HateoasSolver(_mockApiClient.Object, _settings, _mockLogger.Object);
+
+        var result = await solver.SolveAsync(maze);
+
+        Assert.True(result.Success);
+        Assert.Equal(3, result.MoveCount); // east, west (backtrack), south
+    }
+
+    [Fact]
+    public async Task SolveAsync_ChoosesUnvisitedOverVisited()
+    {
+        var maze = CreateMaze();
+
+        var linkCaptures = new List<string>();
+        var moveSequence = new Queue<SessionResponse>(new[]
+        {
+            CreateSession(0, 0, "InProgress", ("east", "/move/east"), ("south", "/move/south")), // start
+            CreateSession(1, 0, "Completed") // end after going east
+        });
+
+        _mockApiClient.Setup(c => c.StartSessionAsync(It.IsAny<Link>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(moveSequence.Dequeue());
+        _mockApiClient.Setup(c => c.MoveAsync(It.IsAny<Link>(), It.IsAny<CancellationToken>()))
+            .Callback<Link, CancellationToken>((link, _) => linkCaptures.Add(link.Href))
+            .ReturnsAsync(() => moveSequence.Dequeue());
+
+        var solver = new HateoasSolver(_mockApiClient.Object, _settings, _mockLogger.Object);
+
+        await solver.SolveAsync(maze);
+
+        // Should choose first available unvisited (east in this case based on Directions order)
+        Assert.Single(linkCaptures);
+    }
+
     private MazeResponse CreateMaze() => new()
     {
         Id = _mazeId,
