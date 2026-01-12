@@ -1,9 +1,11 @@
 using MazeOfHateoas.Api.Helpers;
+using MazeOfHateoas.Api.Hubs;
 using MazeOfHateoas.Api.Models;
 using MazeOfHateoas.Application.Interfaces;
 using MazeOfHateoas.Application.Services;
 using MazeOfHateoas.Domain;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
 namespace MazeOfHateoas.Api.Controllers;
@@ -25,17 +27,20 @@ public class SessionsController : ControllerBase
     private readonly ISessionRepository _sessionRepository;
     private readonly ISessionLinkGenerator _linkGenerator;
     private readonly ILogger<SessionsController> _logger;
+    private readonly IHubContext<MetricsHub> _hubContext;
 
     public SessionsController(
         IMazeRepository mazeRepository,
         ISessionRepository sessionRepository,
         ISessionLinkGenerator linkGenerator,
-        ILogger<SessionsController> logger)
+        ILogger<SessionsController> logger,
+        IHubContext<MetricsHub> hubContext)
     {
         _mazeRepository = mazeRepository;
         _sessionRepository = sessionRepository;
         _linkGenerator = linkGenerator;
         _logger = logger;
+        _hubContext = hubContext;
     }
 
     /// <summary>
@@ -68,6 +73,10 @@ public class SessionsController : ControllerBase
 
         _logger.LogInformation("Session started: {SessionId} for maze {MazeId}",
             session.Id, mazeId);
+
+        var startedEvent = new SessionStartedEvent(session.Id, mazeId, DateTime.UtcNow);
+        await _hubContext.Clients.Group("all").SendAsync("SessionStarted", startedEvent);
+        await _hubContext.Clients.Group($"maze:{mazeId}").SendAsync("SessionStarted", startedEvent);
 
         var response = BuildSessionResponse(session, maze);
 
@@ -196,6 +205,26 @@ public class SessionsController : ControllerBase
         {
             _logger.LogInformation("Session {SessionId} completed maze {MazeId}",
                 sessionId, mazeId);
+
+            var completedEvent = new SessionCompletedEvent(
+                session.Id,
+                mazeId,
+                session.MoveCount,
+                DateTime.UtcNow - session.StartedAt);
+            await _hubContext.Clients.Group("all").SendAsync("SessionCompleted", completedEvent);
+            await _hubContext.Clients.Group($"maze:{mazeId}").SendAsync("SessionCompleted", completedEvent);
+        }
+        else
+        {
+            var movedEvent = new SessionMovedEvent(
+                session.Id,
+                mazeId,
+                session.CurrentPosition.X,
+                session.CurrentPosition.Y,
+                session.MoveCount,
+                session.VisitedCells.Count);
+            await _hubContext.Clients.Group("all").SendAsync("SessionMoved", movedEvent);
+            await _hubContext.Clients.Group($"maze:{mazeId}").SendAsync("SessionMoved", movedEvent);
         }
 
         var response = BuildSessionResponse(session, maze, moveResult);

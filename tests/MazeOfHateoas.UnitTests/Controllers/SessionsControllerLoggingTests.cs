@@ -1,9 +1,12 @@
 using MazeOfHateoas.Api.Controllers;
+using MazeOfHateoas.Api.Hubs;
 using MazeOfHateoas.Api.Services;
 using MazeOfHateoas.Domain;
 using MazeOfHateoas.UnitTests.Helpers;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
+using Moq;
 
 namespace MazeOfHateoas.UnitTests.Controllers;
 
@@ -20,7 +23,14 @@ public class SessionsControllerLoggingTests
         _mazeRepository = new TestMazeRepository();
         _sessionRepository = new TestSessionRepository();
         var linkGenerator = new SessionLinkGenerator();
-        _controller = new SessionsController(_mazeRepository, _sessionRepository, linkGenerator, _logger);
+
+        var clientProxyMock = new Mock<IClientProxy>();
+        var clientsMock = new Mock<IHubClients>();
+        clientsMock.Setup(c => c.Group(It.IsAny<string>())).Returns(clientProxyMock.Object);
+        var hubContextMock = new Mock<IHubContext<MetricsHub>>();
+        hubContextMock.Setup(h => h.Clients).Returns(clientsMock.Object);
+
+        _controller = new SessionsController(_mazeRepository, _sessionRepository, linkGenerator, _logger, hubContextMock.Object);
     }
 
     [Fact]
