@@ -12,7 +12,8 @@ const router = useRouter();
 const mazeId = computed(() => route.params.id as string);
 
 const metrics = ref<MazeMetrics | null>(null);
-const loading = ref(true);
+const initialLoading = ref(true);
+const refreshing = ref(false);
 const error = ref<string | null>(null);
 const showHeatmap = ref(false);
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
@@ -37,13 +38,18 @@ const heatmap = computed(() => {
   return map;
 });
 
-async function loadData() {
+async function loadData(isInitial = false) {
   try {
+    if (isInitial) {
+      initialLoading.value = true;
+    }
+    refreshing.value = true;
     metrics.value = await fetchMazeMetrics(mazeId.value);
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load data';
   } finally {
-    loading.value = false;
+    initialLoading.value = false;
+    refreshing.value = false;
   }
 }
 
@@ -62,7 +68,7 @@ function goBack() {
 }
 
 onMounted(async () => {
-  await loadData();
+  await loadData(true);
   await connect();
   await subscribeToMaze(mazeId.value);
 
@@ -120,7 +126,7 @@ onUnmounted(async () => {
     </header>
 
     <main class="p-6">
-      <div v-if="loading" class="text-center py-12">
+      <div v-if="initialLoading" class="text-center py-12">
         <div class="text-slate-400">Loading...</div>
       </div>
 
