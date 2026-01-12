@@ -29,3 +29,12 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  dashboard:
+    build:
+      context: ./maze-dashboard
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
