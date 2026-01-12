@@ -10,4 +10,5 @@ public class SolverSettings
     public int DelayBetweenMazesMs { get; set; } = 2000;
     public int DelayBetweenMovesMs { get; set; } = 0;
     public int StatsIntervalMazes { get; set; } = 10;
+    public string Algorithm { get; set; } = "dfs";
 }

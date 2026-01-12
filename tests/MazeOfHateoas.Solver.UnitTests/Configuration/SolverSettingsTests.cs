@@ -16,4 +16,12 @@ public class SolverSettingsTests
         Assert.Equal(0, settings.DelayBetweenMovesMs);
         Assert.Equal(10, settings.StatsIntervalMazes);
     }
+
+    [Fact]
+    public void Algorithm_DefaultsToDfs()
+    {
+        var settings = new SolverSettings();
+
+        Assert.Equal("dfs", settings.Algorithm);
+    }
 }
