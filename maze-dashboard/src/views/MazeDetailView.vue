@@ -121,6 +121,9 @@ onUnmounted(async () => {
           <span class="text-sm text-slate-400">
             {{ isConnected ? 'Live' : 'Disconnected' }}
           </span>
+          <span v-if="refreshing" class="text-xs text-slate-500 ml-2">
+            Syncing...
+          </span>
         </div>
       </div>
     </header>
