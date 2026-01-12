@@ -7,6 +7,7 @@ public class MazeSession
     public Position CurrentPosition { get; private set; }
     public SessionState State { get; private set; }
     public DateTime StartedAt { get; }
+    public int MoveCount { get; private set; }
 
     public MazeSession(Guid id, Guid mazeId, Position startPosition)
     {

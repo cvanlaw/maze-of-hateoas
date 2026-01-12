@@ -65,4 +65,12 @@ public class MazeSessionTests
         Assert.True(session.StartedAt >= beforeCreation);
         Assert.True(session.StartedAt <= DateTime.UtcNow);
     }
+
+    [Fact]
+    public void MazeSession_MoveCount_InitializedToZero()
+    {
+        var session = new MazeSession(Guid.NewGuid(), Guid.NewGuid(), new Position(0, 0));
+
+        Assert.Equal(0, session.MoveCount);
+    }
 }
