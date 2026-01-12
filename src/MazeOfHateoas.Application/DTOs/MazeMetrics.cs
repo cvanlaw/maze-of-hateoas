@@ -6,7 +6,7 @@ public record MazeMetrics(
     Guid MazeId,
     int Width,
     int Height,
-    Cell[,] Cells,
+    Cell[][] Cells,
     int ActiveSessions,
     int TotalCompleted,
     List<SessionSnapshot> Sessions

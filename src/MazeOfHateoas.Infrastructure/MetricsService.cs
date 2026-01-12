@@ -76,11 +76,25 @@ public class MetricsService : IMetricsService
             maze.Id,
             maze.Width,
             maze.Height,
-            maze.Cells,
+            ConvertToJaggedArray(maze.Cells, maze.Width, maze.Height),
             activeSessions.Count,
             completedCount,
             snapshots
         );
+    }
+
+    private static Cell[][] ConvertToJaggedArray(Cell[,] cells, int width, int height)
+    {
+        var result = new Cell[height][];
+        for (int y = 0; y < height; y++)
+        {
+            result[y] = new Cell[width];
+            for (int x = 0; x < width; x++)
+            {
+                result[y][x] = cells[x, y];
+            }
+        }
+        return result;
     }
 
     private static double CalculateVelocity(MazeSession session)
