@@ -8,6 +8,7 @@ public class MazeSession
     public SessionState State { get; private set; }
     public DateTime StartedAt { get; }
     public int MoveCount { get; private set; }
+    public HashSet<Position> VisitedCells { get; } = new();
 
     public MazeSession(Guid id, Guid mazeId, Position startPosition)
     {
@@ -16,6 +17,7 @@ public class MazeSession
         CurrentPosition = startPosition;
         State = SessionState.InProgress;
         StartedAt = DateTime.UtcNow;
+        VisitedCells.Add(startPosition);
     }
 
     public MoveResult Move(Direction direction, Maze maze)

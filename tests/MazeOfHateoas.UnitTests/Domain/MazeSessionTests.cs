@@ -73,4 +73,14 @@ public class MazeSessionTests
 
         Assert.Equal(0, session.MoveCount);
     }
+
+    [Fact]
+    public void MazeSession_VisitedCells_ContainsStartPosition()
+    {
+        var startPosition = new Position(0, 0);
+        var session = new MazeSession(Guid.NewGuid(), Guid.NewGuid(), startPosition);
+
+        Assert.Contains(startPosition, session.VisitedCells);
+        Assert.Single(session.VisitedCells);
+    }
 }
