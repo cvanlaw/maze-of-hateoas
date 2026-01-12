@@ -116,4 +116,37 @@ public class MetricsServiceTests
         Assert.Equal(maze1.Id, metrics.MostActiveMazeId);
         Assert.Equal(3, metrics.MostActiveMazeSessionCount);
     }
+
+    [Fact]
+    public async Task GetMazeMetricsAsync_WithValidMaze_ReturnsMetrics()
+    {
+        var mazeRepo = new TestMazeRepository();
+        var sessionRepo = new TestSessionRepository();
+        var maze = TestDataBuilders.CreateTestMaze(5, 5);
+        var session = TestDataBuilders.CreateTestSession(maze.Id);
+        await mazeRepo.SaveAsync(maze);
+        await sessionRepo.SaveAsync(session);
+        var service = new MetricsService(mazeRepo, sessionRepo);
+
+        var metrics = await service.GetMazeMetricsAsync(maze.Id);
+
+        Assert.NotNull(metrics);
+        Assert.Equal(maze.Id, metrics.MazeId);
+        Assert.Equal(5, metrics.Width);
+        Assert.Equal(5, metrics.Height);
+        Assert.Equal(1, metrics.ActiveSessions);
+        Assert.Single(metrics.Sessions);
+    }
+
+    [Fact]
+    public async Task GetMazeMetricsAsync_WithInvalidMaze_ReturnsNull()
+    {
+        var mazeRepo = new TestMazeRepository();
+        var sessionRepo = new TestSessionRepository();
+        var service = new MetricsService(mazeRepo, sessionRepo);
+
+        var metrics = await service.GetMazeMetricsAsync(Guid.NewGuid());
+
+        Assert.Null(metrics);
+    }
 }

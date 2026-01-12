@@ -51,9 +51,36 @@ public class MetricsService : IMetricsService
         );
     }
 
-    public Task<MazeMetrics?> GetMazeMetricsAsync(Guid mazeId)
+    public async Task<MazeMetrics?> GetMazeMetricsAsync(Guid mazeId)
     {
-        throw new NotImplementedException();
+        var maze = await _mazeRepository.GetByIdAsync(mazeId);
+        if (maze == null) return null;
+
+        var sessions = (await _sessionRepository.GetByMazeIdAsync(mazeId)).ToList();
+        var activeSessions = sessions.Where(s => s.State == SessionState.InProgress).ToList();
+        var completedCount = sessions.Count(s => s.State == SessionState.Completed);
+
+        var totalCells = maze.Width * maze.Height;
+
+        var snapshots = activeSessions.Select(s => new SessionSnapshot(
+            s.Id,
+            s.CurrentPosition,
+            s.MoveCount,
+            s.VisitedCells.Count,
+            Math.Round((double)s.VisitedCells.Count / totalCells * 100, 1),
+            Math.Round(CalculateVelocity(s), 1),
+            DateTime.UtcNow - s.StartedAt
+        )).ToList();
+
+        return new MazeMetrics(
+            maze.Id,
+            maze.Width,
+            maze.Height,
+            maze.Cells,
+            activeSessions.Count,
+            completedCount,
+            snapshots
+        );
     }
 
     private static double CalculateVelocity(MazeSession session)
