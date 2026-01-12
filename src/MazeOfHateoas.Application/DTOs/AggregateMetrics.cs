@@ -7,5 +7,6 @@ public record AggregateMetrics(
     double AverageMoves,
     Guid? MostActiveMazeId,
     int MostActiveMazeSessionCount,
-    double SystemVelocity
+    double SystemVelocity,
+    Dictionary<Guid, int> SessionCountsByMaze
 );

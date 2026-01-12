@@ -5,7 +5,7 @@ import MetricCard from '../components/MetricCard.vue';
 import MazeList from '../components/MazeList.vue';
 import { useSignalR } from '../composables/useSignalR';
 import { fetchAggregateMetrics, fetchMazes } from '../services/api';
-import type { AggregateMetrics, MazeSummary } from '../types';
+import type { AggregateMetrics, MazeSummary, SessionStartedEvent, SessionCompletedEvent } from '../types';
 
 const router = useRouter();
 const metrics = ref<AggregateMetrics | null>(null);
@@ -33,6 +33,11 @@ async function loadData() {
     ]);
     metrics.value = metricsData;
     mazes.value = mazesData;
+
+    // Populate session counts from metrics
+    if (metricsData?.sessionCountsByMaze) {
+      sessionCounts.value = { ...metricsData.sessionCountsByMaze };
+    }
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load data';
   } finally {
@@ -49,7 +54,8 @@ onMounted(async () => {
   await connect();
   await subscribeToAll();
 
-  onSessionStarted.value = () => {
+  onSessionStarted.value = (event: SessionStartedEvent) => {
+    sessionCounts.value[event.mazeId] = (sessionCounts.value[event.mazeId] || 0) + 1;
     loadData();
   };
 
@@ -57,7 +63,8 @@ onMounted(async () => {
     loadData();
   };
 
-  onSessionCompleted.value = () => {
+  onSessionCompleted.value = (event: SessionCompletedEvent) => {
+    sessionCounts.value[event.mazeId] = Math.max(0, (sessionCounts.value[event.mazeId] || 1) - 1);
     loadData();
   };
 });

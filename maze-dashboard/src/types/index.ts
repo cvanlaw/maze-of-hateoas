@@ -6,6 +6,7 @@ export interface AggregateMetrics {
   mostActiveMazeId: string | null;
   mostActiveMazeSessionCount: number;
   systemVelocity: number;
+  sessionCountsByMaze: Record<string, number>;
 }
 
 export interface Position {

@@ -36,6 +36,11 @@ public class MetricsService : IMetricsService
             .OrderByDescending(g => g.Count())
             .FirstOrDefault();
 
+        var sessionCountsByMaze = sessions
+            .Where(s => s.State == SessionState.InProgress)
+            .GroupBy(s => s.MazeId)
+            .ToDictionary(g => g.Key, g => g.Count());
+
         var systemVelocity = sessions
             .Where(s => s.State == SessionState.InProgress)
             .Sum(s => CalculateVelocity(s));
@@ -47,7 +52,8 @@ public class MetricsService : IMetricsService
             Math.Round(averageMoves, 1),
             mostActiveMaze?.Key,
             mostActiveMaze?.Count() ?? 0,
-            Math.Round(systemVelocity, 1)
+            Math.Round(systemVelocity, 1),
+            sessionCountsByMaze
         );
     }
 
