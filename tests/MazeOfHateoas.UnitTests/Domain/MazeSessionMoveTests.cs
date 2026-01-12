@@ -1,4 +1,5 @@
 using MazeOfHateoas.Domain;
+using MazeOfHateoas.UnitTests.Helpers;
 
 namespace MazeOfHateoas.UnitTests.Domain;
 
@@ -286,5 +287,27 @@ public class MazeSessionMoveTests
         session.Move(Direction.North, maze);
 
         Assert.Equal(new Position(0, 0), session.CurrentPosition);
+    }
+
+    [Fact]
+    public void Move_Success_IncrementsMoveCount()
+    {
+        var maze = TestDataBuilders.CreateTestMaze(3, 3, allCellsOpen: true);
+        var session = TestDataBuilders.CreateTestSession(maze.Id);
+
+        session.Move(Direction.East, maze);
+
+        Assert.Equal(1, session.MoveCount);
+    }
+
+    [Fact]
+    public void Move_Blocked_DoesNotIncrementMoveCount()
+    {
+        var maze = TestDataBuilders.CreateTestMaze(3, 3, allCellsOpen: false);
+        var session = TestDataBuilders.CreateTestSession(maze.Id);
+
+        session.Move(Direction.East, maze);
+
+        Assert.Equal(0, session.MoveCount);
     }
 }

@@ -34,6 +34,7 @@ public class MazeSession
             return MoveResult.OutOfBounds;
 
         CurrentPosition = newPosition;
+        MoveCount++;
 
         if (CurrentPosition == maze.End)
             State = SessionState.Completed;
