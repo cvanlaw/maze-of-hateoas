@@ -11,18 +11,7 @@ const sessionColors = [
 ];
 
 function getSessionColor(index: number): string {
-  return sessionColors[index % sessionColors.length];
-}
-
-function formatDuration(duration: string): string {
-  const match = duration.match(/(\d+):(\d+):(\d+)/);
-  if (match) {
-    const [, hours, minutes, seconds] = match;
-    if (parseInt(hours) > 0) return `${hours}h ${minutes}m`;
-    if (parseInt(minutes) > 0) return `${minutes}m ${seconds}s`;
-    return `${seconds}s`;
-  }
-  return duration;
+  return sessionColors[index % sessionColors.length] ?? 'bg-blue-500';
 }
 </script>
 

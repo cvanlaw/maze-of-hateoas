@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { Cell, SessionSnapshot, Position } from '../types';
+import type { Cell, SessionSnapshot } from '../types';
 
 const props = defineProps<{
   cells: Cell[][];
@@ -27,7 +27,7 @@ function getCellAt(x: number, y: number): Cell | undefined {
 }
 
 function getSessionColor(index: number): string {
-  return sessionColors[index % sessionColors.length];
+  return sessionColors[index % sessionColors.length] ?? '#3b82f6';
 }
 
 function getHeatmapOpacity(x: number, y: number): number {
