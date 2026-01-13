@@ -20,6 +20,9 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    deploy:
+      mode: replicated
+      replicas: 1
     environment:
       - SOLVER_API_BASE_URL=http://api:8080
       - SOLVER_ALGORITHM=dfs
