@@ -17,6 +17,7 @@ const refreshing = ref(false);
 const error = ref<string | null>(null);
 const showHeatmap = ref(false);
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingRefresh = false;
 
 const {
   isConnected,
@@ -54,13 +55,20 @@ async function loadData(isInitial = false) {
 }
 
 function scheduleRefresh() {
-  if (refreshTimer) {
-    clearTimeout(refreshTimer);
-  }
-  // Shorter debounce for detail view - more responsive
-  refreshTimer = setTimeout(() => {
+  if (!refreshTimer) {
+    // No timer running - call immediately and start throttle period
     loadData();
-  }, 500);
+    refreshTimer = setTimeout(() => {
+      refreshTimer = null;
+      if (pendingRefresh) {
+        pendingRefresh = false;
+        scheduleRefresh();
+      }
+    }, 500);
+  } else {
+    // Timer running - mark that we want to refresh when throttle ends
+    pendingRefresh = true;
+  }
 }
 
 function goBack() {
