@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - Serilog__MinimumLevel__Default=Information
@@ -13,6 +15,15 @@ services:
       retries: 10
       start_period: 10s
 
+  dashboard:
+    build:
+      context: ./maze-dashboard
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
   solver:
     build:
       context: .
@@ -22,7 +33,7 @@ services:
         condition: service_healthy
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: 3
     environment:
       - SOLVER_API_BASE_URL=http://api:8080
       - SOLVER_ALGORITHM=dfs
