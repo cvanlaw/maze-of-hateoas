@@ -3,6 +3,8 @@ using MazeOfHateoas.Solver.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Json;
@@ -44,7 +46,31 @@ try
         client.BaseAddress = new Uri(config["SOLVER_API_BASE_URL"] ?? "http://localhost:8080");
     });
 
-    builder.Services.AddSingleton<ISolver, DepthFirstSolver>();
+    builder.Services.AddSingleton<ISolver>(sp =>
+    {
+        var settings = sp.GetRequiredService<IOptions<SolverSettings>>().Value;
+        var apiClient = sp.GetRequiredService<IMazeApiClient>();
+        var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+
+        var algorithm = settings.Algorithm.ToLowerInvariant();
+        Log.Information("Using solver algorithm: {Algorithm}", algorithm);
+
+        return algorithm switch
+        {
+            "bfs" => new BreadthFirstSolver(
+                apiClient,
+                sp.GetRequiredService<IOptions<SolverSettings>>(),
+                loggerFactory.CreateLogger<BreadthFirstSolver>()),
+            "random" => new RandomWalkSolver(
+                apiClient,
+                sp.GetRequiredService<IOptions<SolverSettings>>(),
+                loggerFactory.CreateLogger<RandomWalkSolver>()),
+            _ => new DepthFirstSolver(
+                apiClient,
+                sp.GetRequiredService<IOptions<SolverSettings>>(),
+                loggerFactory.CreateLogger<DepthFirstSolver>())
+        };
+    });
     builder.Services.AddHostedService<SolverHostedService>();
 
     var app = builder.Build();
