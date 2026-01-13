@@ -22,6 +22,7 @@ services:
         condition: service_healthy
     environment:
       - SOLVER_API_BASE_URL=http://api:8080
+      - SOLVER_ALGORITHM=dfs
       - SOLVER_MAZE_WIDTH=20
       - SOLVER_MAZE_HEIGHT=20
       - SOLVER_DELAY_BETWEEN_MAZES_MS=2000
