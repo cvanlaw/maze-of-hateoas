@@ -2,17 +2,39 @@
 
 A RESTful API demonstrating Hypermedia as the Engine of Application State (HATEOAS) through interactive maze navigation. Players generate mazes and navigate by following hypermedia links—the API dynamically communicates available moves based on the player's position and surrounding walls.
 
+## Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) (with Docker Compose)
+- [Make](https://www.gnu.org/software/make/) (typically pre-installed on macOS/Linux)
+
 ## Quick Start
 
 ```bash
-# Run the API
-docker compose up --build
+# Run the full stack (API + UI + solver)
+make run
 
 # Run tests
-docker compose -f docker-compose.test.yml up --build
+make test
 ```
 
-The API is available at `http://localhost:8080`.
+The API is available at `http://localhost:8080` and the UI at `http://localhost:5173`.
+
+## Available Make Targets
+
+Run `make help` for a full list. Key targets:
+
+| Target | Description |
+|--------|-------------|
+| `make run` | Run API, UI, and solver |
+| `make run-api` | Run API only (port 8080) |
+| `make run-solver` | Run API and solver together |
+| `make run-dev` | Run API (Docker) + UI (hot reload) |
+| `make test` | Run all tests |
+| `make test-filter FILTER=Name` | Run tests matching filter |
+| `make build` | Build all Docker images |
+| `make clean` | Stop and remove containers |
+| `make logs` | View logs from running containers |
+| `make status` | Show running containers |
 
 ## API Endpoints
 
